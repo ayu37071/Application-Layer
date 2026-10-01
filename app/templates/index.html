@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ app_name }}</title>
+  <title>Application Layer Activity &amp; Protocol Visualizer</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <!-- Header Bar -->
@@ -15,9 +15,9 @@
     <div class="header-content">
       <div class="header-branding">
         <div class="logo-badge">L4/L7</div>
-        <div>
+        <div class="header-titles">
           <h1>Application &amp; Transport Layer Protocol Visualizer</h1>
-          <p class="subtitle">Computer Networks Lab &bull; Dual-Panel Activity &amp; Synchronized Protocol Visualizer</p>
+          <p class="subtitle">Application Layer Activity &amp; Protocol Visualizer &bull; L4/L7 Synchronized Laboratory</p>
         </div>
       </div>
       <div class="header-status">
@@ -29,7 +29,7 @@
     </div>
   </header>
 
-  <!-- Dual-Panel Container -->
+  <!-- Dual-Panel Layout Container -->
   <main class="dashboard-wrapper">
     <div class="dashboard-grid">
 
@@ -40,13 +40,13 @@
         <div class="panel-header">
           <div class="panel-title-wrap">
             <span class="panel-index">1</span>
-            <h2>Activity Panel</h2>
+            <h2>Activity Console</h2>
           </div>
-          <span class="panel-subtitle">Select an activity to trigger protocol exchanges</span>
+          <span class="panel-status-pill" id="global-activity-pill">Idle</span>
         </div>
 
         <!-- Mode Selector Tabs -->
-        <nav class="activity-nav" aria-label="Activity modes">
+        <nav class="activity-nav" aria-label="Activity Modes">
           <button class="nav-tab active" data-mode="browsing" id="tab-browsing">
             <span class="tab-icon">🌐</span>
             <span class="tab-text">Browsing</span>
@@ -65,8 +65,8 @@
           <!-- A. Browsing Activity View -->
           <div class="activity-view active" id="view-browsing">
             <div class="view-header">
-              <h3>Web Browsing (DNS, HTTP/1.1 &amp; TCP)</h3>
-              <p class="view-desc">Simulates domain resolution via DNS, TCP 3-Way Handshake, and HTTP GET dialogue over port 80.</p>
+              <h3>Web Browsing</h3>
+              <p class="view-desc">DNS domain resolution, TCP 3-Way Handshake, and HTTP/1.1 GET dialogue.</p>
             </div>
 
             <form id="form-browsing" onsubmit="return false;">
@@ -98,18 +98,18 @@
 
             <div class="status-card">
               <div class="status-header">
-                <span class="status-label">Status:</span>
+                <span class="status-label">Status</span>
                 <span class="status-value badge badge-idle" id="browsing-status">Idle (Ready to visit)</span>
               </div>
             </div>
 
             <div class="log-card">
               <div class="log-header">
-                <span>Activity Log</span>
+                <span>Activity Event Log</span>
                 <button type="button" class="btn-clear-log" data-target="browsing-log-content">Clear</button>
               </div>
               <div class="log-content" id="browsing-log-content">
-                <div class="log-entry log-system">Ready. Enter a URL and click "Visit" to trigger DNS, TCP &amp; HTTP.</div>
+                <div class="log-entry log-system">Ready. Enter a URL and click "Visit" to start simulation.</div>
               </div>
             </div>
           </div>
@@ -117,8 +117,8 @@
           <!-- B. Mail Activity View -->
           <div class="activity-view" id="view-mail">
             <div class="view-header">
-              <h3>Electronic Mail (SMTP &amp; TCP Byte Stream)</h3>
-              <p class="view-desc">Simulates TCP handshake to Port 25 followed by an RFC 5321 mail transaction state machine.</p>
+              <h3>Electronic Mail</h3>
+              <p class="view-desc">TCP Handshake to Port 25 followed by full RFC 5321 SMTP transaction dialogue.</p>
             </div>
 
             <form id="form-mail" onsubmit="return false;">
@@ -145,14 +145,14 @@
 
               <div class="input-group">
                 <label for="mail-body">Message Body</label>
-                <textarea id="mail-body" rows="4" required>Dear Professor,
+                <textarea id="mail-body" rows="3" required>Dear Professor,
 
 Here is our submission for the Computer Networks application &amp; transport layer visualizer.
 
-Protocol stack: DNS, HTTP/1.1, SMTP, TCP, and UDP.
+Protocol stack: DNS, HTTP/1.1, SMTP, and TCP.
 
 Best regards,
-Student Pair</textarea>
+Student</textarea>
               </div>
 
               <div class="form-actions">
@@ -165,14 +165,14 @@ Student Pair</textarea>
 
             <div class="status-card">
               <div class="status-header">
-                <span class="status-label">Status:</span>
+                <span class="status-label">Status</span>
                 <span class="status-value badge badge-idle" id="mail-status">Idle (Ready to send)</span>
               </div>
             </div>
 
             <div class="log-card">
               <div class="log-header">
-                <span>Activity Log</span>
+                <span>Activity Event Log</span>
                 <button type="button" class="btn-clear-log" data-target="mail-log-content">Clear</button>
               </div>
               <div class="log-content" id="mail-log-content">
@@ -184,13 +184,13 @@ Student Pair</textarea>
           <!-- C. Streaming Activity View -->
           <div class="activity-view" id="view-streaming">
             <div class="view-header">
-              <h3>Adaptive Video Streaming (HLS / DASH over TCP)</h3>
-              <p class="view-desc">Demonstrates chunk-based media distribution over persistent TCP byte stream.</p>
+              <h3>Adaptive Video Streaming</h3>
+              <p class="view-desc">HLS manifest requests and continuous video chunk downloads segmented over TCP.</p>
             </div>
 
             <form id="form-streaming" onsubmit="return false;">
               <div class="input-group">
-                <label for="stream-quality">Stream Quality (Resolution / Bitrate)</label>
+                <label for="stream-quality">Stream Resolution &amp; Bitrate</label>
                 <select id="stream-quality">
                   <option value="360p">360p (Low - 800 kbps, 640x360)</option>
                   <option value="720p" selected>720p HD (Medium - 2.5 Mbps, 1280x720)</option>
@@ -203,17 +203,17 @@ Student Pair</textarea>
                   <span>▶ Play Stream</span>
                 </button>
                 <button type="button" class="btn btn-secondary" id="btn-stream-pause">
-                  <span>⏸ Pause Stream</span>
+                  <span>⏸ Pause</span>
                 </button>
               </div>
             </form>
 
-            <!-- Simulated Video Player Canvas / Frame -->
+            <!-- Video Player Preview Monitor -->
             <div class="mock-player">
               <div class="player-screen" id="player-screen">
                 <div class="player-overlay">
                   <span class="player-badge" id="player-quality-badge">720p HD</span>
-                  <div class="player-status-center" id="player-status-icon">▶ Ready</div>
+                  <div class="player-status-center" id="player-status-icon">▶ Standby</div>
                 </div>
                 <div class="player-buffer-bar">
                   <div class="buffer-fill" id="buffer-fill"></div>
@@ -221,24 +221,24 @@ Student Pair</textarea>
               </div>
               <div class="player-meta">
                 <span id="player-time">00:00 / 01:20</span>
-                <span id="player-chunk-label">Buffer: 0 chunks loaded</span>
+                <span id="player-chunk-label">Buffer: 0 chunk(s)</span>
               </div>
             </div>
 
             <div class="status-card">
               <div class="status-header">
-                <span class="status-label">Status:</span>
+                <span class="status-label">Status</span>
                 <span class="status-value badge badge-idle" id="stream-status">Idle (Player ready)</span>
               </div>
             </div>
 
             <div class="log-card">
               <div class="log-header">
-                <span>Activity Log</span>
+                <span>Activity Event Log</span>
                 <button type="button" class="btn-clear-log" data-target="stream-log-content">Clear</button>
               </div>
               <div class="log-content" id="stream-log-content">
-                <div class="log-entry log-system">Ready. Select quality and press "Play Stream" to fetch HLS manifests &amp; media segments over TCP.</div>
+                <div class="log-entry log-system">Ready. Select quality and click "Play Stream" to fetch HLS chunks over TCP.</div>
               </div>
             </div>
           </div>
@@ -252,19 +252,21 @@ Student Pair</textarea>
         <div class="panel-header">
           <div class="panel-title-wrap">
             <span class="panel-index">2</span>
-            <h2>Protocol Visualization Panel</h2>
+            <h2>Protocol Inspector</h2>
           </div>
-          <div class="playback-controls" aria-label="Playback control toolbar">
-            <button type="button" class="btn-ctrl" id="btn-replay" title="Replay exchange from beginning">
+
+          <!-- Playback Toolbar Controls -->
+          <div class="playback-controls" aria-label="Playback Toolbar">
+            <button type="button" class="btn-ctrl" id="btn-replay" title="Replay from beginning">
               <span>⏮ Replay</span>
             </button>
-            <button type="button" class="btn-ctrl" id="btn-prev-step" title="Previous step">
+            <button type="button" class="btn-ctrl" id="btn-prev-step" title="Previous packet/step">
               <span>◀ Prev</span>
             </button>
-            <button type="button" class="btn-ctrl btn-ctrl-primary" id="btn-pause-resume" title="Pause or resume auto-play">
+            <button type="button" class="btn-ctrl btn-ctrl-primary" id="btn-pause-resume" title="Pause / Resume playback">
               <span id="label-pause-resume">⏸ Pause</span>
             </button>
-            <button type="button" class="btn-ctrl" id="btn-next-step" title="Next step">
+            <button type="button" class="btn-ctrl" id="btn-next-step" title="Next packet/step">
               <span>Next ▶</span>
             </button>
           </div>
@@ -275,23 +277,23 @@ Student Pair</textarea>
           <button class="layer-tab active" data-layer="application" id="tab-layer-app">
             <span class="layer-icon">🌐</span>
             <div class="layer-tab-text">
-              <span class="layer-name">APPLICATION LAYER</span>
+              <span class="layer-name">APPLICATION LAYER (L7)</span>
               <span class="layer-desc">DNS &bull; HTTP/1.1 &bull; SMTP &bull; HLS</span>
             </div>
           </button>
           <button class="layer-tab" data-layer="transport" id="tab-layer-transport">
             <span class="layer-icon">⚡</span>
             <div class="layer-tab-text">
-              <span class="layer-name">TRANSPORT LAYER</span>
-              <span class="layer-desc">TCP Handshake &bull; Seq/Ack &bull; State Machine</span>
+              <span class="layer-name">TRANSPORT LAYER (L4)</span>
+              <span class="layer-desc">TCP Handshake &bull; Seq/Ack Math &bull; State Machine</span>
             </div>
           </button>
         </nav>
 
-        <!-- Meta bar: Shared status, speed and counter -->
+        <!-- Sub-header Meta Bar -->
         <div class="protocol-meta-bar">
           <div class="meta-left">
-            <span class="activity-type-tag" id="current-activity-tag">No Active Activity</span>
+            <span class="activity-type-tag" id="current-activity-tag">No Active Session</span>
             <span class="step-counter" id="step-counter">Step 0 / 0</span>
           </div>
           <div class="meta-right">
@@ -312,32 +314,32 @@ Student Pair</textarea>
           <div class="step-detail-card" id="step-detail-card">
             <!-- Cross-layer linkage badge -->
             <div class="cross-layer-banner" id="app-cross-layer-banner">
-              <span class="cross-layer-label">Transport Binding:</span>
-              <span class="cross-layer-value" id="app-linked-transport-label">Not connected</span>
-              <button type="button" class="btn-cross-switch" id="btn-jump-to-transport">View in Transport Layer &rarr;</button>
+              <div class="cross-layer-info">
+                <span class="cross-layer-label">Transport Binding:</span>
+                <span class="cross-layer-value" id="app-linked-transport-label">Waiting for activity</span>
+              </div>
+              <button type="button" class="btn-cross-switch" id="btn-jump-to-transport">Inspect in Transport Layer &rarr;</button>
             </div>
 
             <!-- Direction Banner -->
             <div class="direction-banner" id="direction-banner">
               <div class="host-node host-client">
-                <span class="node-icon">💻</span>
-                <span class="node-title">CLIENT</span>
+                <span class="node-chip">CLIENT HOST</span>
                 <span class="node-endpoint" id="client-endpoint">192.168.1.105:54120</span>
               </div>
 
               <div class="arrow-visualizer" id="arrow-visualizer">
-                <span class="packet-protocol-badge" id="packet-protocol-badge">DNS</span>
+                <span class="packet-protocol-badge proto-dns" id="packet-protocol-badge">STANDBY</span>
                 <div class="arrow-track">
                   <div class="arrow-line"></div>
                   <div class="arrow-head arrow-head-right" id="arrow-head"></div>
                 </div>
-                <span class="packet-summary-label" id="packet-summary-label">Standard Query: A example.edu</span>
+                <span class="packet-summary-label" id="packet-summary-label">Select an activity to begin</span>
               </div>
 
               <div class="host-node host-server">
-                <span class="node-icon">🖥️</span>
-                <span class="node-title" id="server-title">SERVER</span>
-                <span class="node-endpoint" id="server-endpoint">8.8.8.8:53</span>
+                <span class="node-chip" id="server-title">SERVER</span>
+                <span class="node-endpoint" id="server-endpoint">Remote Peer</span>
               </div>
             </div>
 
@@ -348,7 +350,7 @@ Student Pair</textarea>
                 <span>Important Protocol Fields</span>
               </div>
               <div class="highlights-grid" id="highlights-grid">
-                <div class="empty-highlights">Key extracted fields will appear here.</div>
+                <div class="empty-highlights">Fields extracted from active application messages will appear here.</div>
               </div>
             </div>
 
@@ -362,7 +364,7 @@ Student Pair</textarea>
                 <button type="button" class="btn-copy" id="btn-copy-wire" title="Copy raw message">Copy Message</button>
               </div>
               <div class="wire-container">
-                <pre class="wire-code" id="wire-code">No active protocol step loaded. Trigger an activity to inspect packet content.</pre>
+                <pre class="wire-code" id="wire-code">No active protocol step loaded. Trigger an activity on the left to inspect packet content.</pre>
               </div>
             </div>
 
@@ -373,7 +375,7 @@ Student Pair</textarea>
                 <span class="explanation-title">Educational Rationale &amp; Network Mechanics</span>
               </div>
               <div class="explanation-text" id="explanation-text">
-                Detailed explanations of why this packet is sent, what flags are used, and how it aligns with Kurose &amp; Ross Layer 7 concepts will appear here as the exchange progresses.
+                Detailed educational explanations regarding application-layer requests, responses, status codes, and RFC specifications will appear here during playback.
               </div>
             </div>
           </div>
@@ -412,16 +414,17 @@ Student Pair</textarea>
           <div class="step-detail-card" id="transport-detail-card">
             <!-- Cross-layer linkage back to App step -->
             <div class="cross-layer-banner transport-banner">
-              <span class="cross-layer-label">Carries Application Event:</span>
-              <span class="cross-layer-value" id="transport-linked-app-label">None (Transport Control Segment)</span>
+              <div class="cross-layer-info">
+                <span class="cross-layer-label">Carries Application Event:</span>
+                <span class="cross-layer-value" id="transport-linked-app-label">None (Transport Handshake / Control Segment)</span>
+              </div>
               <button type="button" class="btn-cross-switch" id="btn-jump-to-app">View Application Message &rarr;</button>
             </div>
 
             <!-- Direction Banner for Transport Segment -->
             <div class="direction-banner" id="transport-direction-banner">
               <div class="host-node host-client">
-                <span class="node-icon">💻</span>
-                <span class="node-title">CLIENT (HOST)</span>
+                <span class="node-chip">CLIENT SOCKET</span>
                 <span class="node-endpoint" id="tcp-src-endpoint">192.168.1.105:52410</span>
               </div>
 
@@ -437,8 +440,7 @@ Student Pair</textarea>
               </div>
 
               <div class="host-node host-server">
-                <span class="node-icon">🖥️</span>
-                <span class="node-title" id="tcp-server-title">DESTINATION</span>
+                <span class="node-chip" id="tcp-server-title">SERVER SOCKET</span>
                 <span class="node-endpoint" id="tcp-dst-endpoint">93.184.216.34:80</span>
               </div>
             </div>
@@ -452,32 +454,32 @@ Student Pair</textarea>
               <div class="highlights-grid" id="tcp-fields-grid">
                 <div class="highlight-card">
                   <span class="highlight-name">Sequence Number (SEQ)</span>
-                  <span class="highlight-value" id="tcp-field-seq">1000</span>
+                  <span class="highlight-value" id="tcp-field-seq">—</span>
                   <span class="highlight-desc">Byte offset of first data byte in byte stream</span>
                 </div>
                 <div class="highlight-card">
                   <span class="highlight-name">Acknowledgement (ACK)</span>
-                  <span class="highlight-value" id="tcp-field-ack">0</span>
-                  <span class="highlight-desc">Next expected byte from remote peer</span>
+                  <span class="highlight-value" id="tcp-field-ack">—</span>
+                  <span class="highlight-desc">Next expected continuous byte from remote peer</span>
                 </div>
                 <div class="highlight-card">
                   <span class="highlight-name">Receive Window (WIN)</span>
-                  <span class="highlight-value" id="tcp-field-win">64,240</span>
-                  <span class="highlight-desc">Flow control buffer available for incoming bytes</span>
+                  <span class="highlight-value" id="tcp-field-win">—</span>
+                  <span class="highlight-desc">Advertised flow control buffer capacity</span>
                 </div>
                 <div class="highlight-card">
                   <span class="highlight-name">Payload Length (LEN)</span>
-                  <span class="highlight-value" id="tcp-field-len">0 bytes</span>
+                  <span class="highlight-value" id="tcp-field-len">—</span>
                   <span class="highlight-desc">Volume of Layer 7 payload in this segment</span>
                 </div>
                 <div class="highlight-card">
                   <span class="highlight-name">Control Flags</span>
-                  <span class="highlight-value" id="tcp-field-flags">SYN</span>
+                  <span class="highlight-value" id="tcp-field-flags">—</span>
                   <span class="highlight-desc">Active TCP connection control bits</span>
                 </div>
                 <div class="highlight-card">
                   <span class="highlight-name">State Transitions</span>
-                  <span class="highlight-value" id="tcp-field-states">CLOSED &rarr; SYN-SENT</span>
+                  <span class="highlight-value" id="tcp-field-states">—</span>
                   <span class="highlight-desc">RFC 793 / 9293 connection state transition</span>
                 </div>
               </div>
@@ -507,178 +509,183 @@ Student Pair</textarea>
                 Detailed educational explanations regarding sequence numbers, acknowledgements, sliding windows, and 3-way handshakes will appear here as segments advance.
               </div>
             </div>
+          </div>
+        </div>
 
-            <!-- Transport Live Statistics Bar -->
-            <div class="stats-dashboard">
-              <div class="section-title">
-                <span class="title-icon">📊</span>
-                <span>Transport Session Telemetry &amp; Statistics</span>
+        <!-- ======================================================= -->
+        <!-- BOTTOM SHELF: DOCKED ANALYSIS & TELEMETRY TOOLS         -->
+        <!-- ======================================================= -->
+        <div class="analysis-dock-container">
+          <!-- Dock Tab Switcher -->
+          <nav class="dock-nav-tabs" aria-label="Analysis Tools">
+            <button class="dock-tab active" data-dock="telemetry">
+              <span>📊 Live Telemetry</span>
+            </button>
+            <button class="dock-tab" data-dock="cwnd">
+              <span>📈 Congestion (cwnd)</span>
+            </button>
+            <button class="dock-tab" data-dock="tcp-udp">
+              <span>⚖️ TCP vs. UDP</span>
+            </button>
+            <button class="dock-tab" data-dock="quic">
+              <span>🚀 QUIC (HTTP/3)</span>
+            </button>
+            <button class="dock-tab" data-dock="fault">
+              <span>🧪 Network Conditions</span>
+            </button>
+          </nav>
+
+          <!-- Dock Pane 1: Telemetry Dashboard -->
+          <div class="dock-pane active" id="pane-telemetry">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-num" id="stat-total-packets">0</span>
+                <span class="stat-label">Total Packets</span>
               </div>
-              <div class="stats-grid">
-                <div class="stat-card">
-                  <span class="stat-num" id="stat-total-packets">0</span>
-                  <span class="stat-label">Total Packets</span>
-                </div>
-                <div class="stat-card">
-                  <span class="stat-num" id="stat-tcp-segments">0</span>
-                  <span class="stat-label">TCP Segments</span>
-                </div>
-                <div class="stat-card">
-                  <span class="stat-num" id="stat-app-messages">0</span>
-                  <span class="stat-label">App Messages</span>
-                </div>
-                <div class="stat-card">
-                  <span class="stat-num" id="stat-bytes-transferred">0 B</span>
-                  <span class="stat-label">Bytes Transferred</span>
-                </div>
-                <div class="stat-card">
-                  <span class="stat-num" id="stat-retransmissions">0</span>
-                  <span class="stat-label">Retransmissions</span>
-                </div>
-                <div class="stat-card">
-                  <span class="stat-num" id="stat-connection-state">CLOSED</span>
-                  <span class="stat-label">Connection State</span>
-                </div>
+              <div class="stat-card">
+                <span class="stat-num" id="stat-tcp-segments">0</span>
+                <span class="stat-label">TCP Segments</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-num" id="stat-app-messages">0</span>
+                <span class="stat-label">App Messages</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-num" id="stat-bytes-transferred">0 B</span>
+                <span class="stat-label">Bytes Transferred</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-num" id="stat-retransmissions">0</span>
+                <span class="stat-label">Retransmissions</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-num" id="stat-connection-state">CLOSED</span>
+                <span class="stat-label">TCP State</span>
               </div>
             </div>
+          </div>
 
-            <!-- Educational Tools Accordion / Cards -->
-            <div class="educational-tools-wrap">
-              <!-- Tool 1: Congestion Window (cwnd) Graph -->
-              <details class="tool-accordion" open>
-                <summary class="tool-summary">
-                  <span>📈 Congestion Window (cwnd) Progression</span>
-                  <span class="tool-tag">Simplified Educational Model</span>
-                </summary>
-                <div class="tool-body">
-                  <p class="tool-desc">
-                    Illustrates how TCP probes available network capacity. In <strong>Slow Start</strong>, cwnd doubles every RTT (exponential growth: 1 &rarr; 2 &rarr; 4 &rarr; 8 MSS).
-                    Upon reaching <em>ssthresh</em>, TCP enters <strong>Congestion Avoidance</strong> (additive increase: +1 MSS per RTT).
-                  </p>
-                  <div class="cwnd-chart-container">
-                    <div class="cwnd-bar-group">
-                      <div class="cwnd-bar" style="height: 15%;"><span class="cwnd-val">1</span></div>
-                      <span class="cwnd-label">RTT 1</span>
-                    </div>
-                    <div class="cwnd-bar-group">
-                      <div class="cwnd-bar" style="height: 25%;"><span class="cwnd-val">2</span></div>
-                      <span class="cwnd-label">RTT 2</span>
-                    </div>
-                    <div class="cwnd-bar-group">
-                      <div class="cwnd-bar" style="height: 45%;"><span class="cwnd-val">4</span></div>
-                      <span class="cwnd-label">RTT 3</span>
-                    </div>
-                    <div class="cwnd-bar-group">
-                      <div class="cwnd-bar" style="height: 75%;"><span class="cwnd-val">8</span></div>
-                      <span class="cwnd-label">RTT 4 (ssthresh)</span>
-                    </div>
-                    <div class="cwnd-bar-group">
-                      <div class="cwnd-bar cwnd-ca" style="height: 85%;"><span class="cwnd-val">9</span></div>
-                      <span class="cwnd-label">RTT 5 (CA)</span>
-                    </div>
-                    <div class="cwnd-bar-group">
-                      <div class="cwnd-bar cwnd-ca" style="height: 95%;"><span class="cwnd-val">10</span></div>
-                      <span class="cwnd-label">RTT 6 (CA)</span>
-                    </div>
-                  </div>
-                  <div class="cwnd-legend">
-                    <span class="legend-item"><span class="legend-color legend-ss"></span> Slow Start (Exponential)</span>
-                    <span class="legend-item"><span class="legend-color legend-ca"></span> Congestion Avoidance (+1 MSS / RTT)</span>
-                  </div>
+          <!-- Dock Pane 2: Congestion Window (cwnd) -->
+          <div class="dock-pane" id="pane-cwnd">
+            <div class="tool-content">
+              <div class="tool-header-row">
+                <p class="tool-desc">
+                  Demonstrates TCP throughput probing. In <strong>Slow Start</strong>, cwnd doubles every RTT (exponential: 1 &rarr; 2 &rarr; 4 &rarr; 8 MSS).
+                  Upon reaching <em>ssthresh</em>, TCP enters <strong>Congestion Avoidance</strong> (additive increase: +1 MSS per RTT).
+                </p>
+                <span class="tool-tag">Simplified Educational Model</span>
+              </div>
+              <div class="cwnd-chart-container">
+                <div class="cwnd-bar-group">
+                  <div class="cwnd-bar" style="height: 18%;"><span class="cwnd-val">1</span></div>
+                  <span class="cwnd-label">RTT 1</span>
                 </div>
-              </details>
+                <div class="cwnd-bar-group">
+                  <div class="cwnd-bar" style="height: 32%;"><span class="cwnd-val">2</span></div>
+                  <span class="cwnd-label">RTT 2</span>
+                </div>
+                <div class="cwnd-bar-group">
+                  <div class="cwnd-bar" style="height: 55%;"><span class="cwnd-val">4</span></div>
+                  <span class="cwnd-label">RTT 3</span>
+                </div>
+                <div class="cwnd-bar-group">
+                  <div class="cwnd-bar" style="height: 80%;"><span class="cwnd-val">8</span></div>
+                  <span class="cwnd-label">RTT 4 (ssthresh)</span>
+                </div>
+                <div class="cwnd-bar-group">
+                  <div class="cwnd-bar cwnd-ca" style="height: 88%;"><span class="cwnd-val">9</span></div>
+                  <span class="cwnd-label">RTT 5 (CA)</span>
+                </div>
+                <div class="cwnd-bar-group">
+                  <div class="cwnd-bar cwnd-ca" style="height: 98%;"><span class="cwnd-val">10</span></div>
+                  <span class="cwnd-label">RTT 6 (CA)</span>
+                </div>
+              </div>
+              <div class="cwnd-legend">
+                <span class="legend-item"><span class="legend-color legend-ss"></span> Slow Start (Exponential)</span>
+                <span class="legend-item"><span class="legend-color legend-ca"></span> Congestion Avoidance (+1 MSS / RTT)</span>
+              </div>
+            </div>
+          </div>
 
-              <!-- Tool 2: TCP vs UDP Architectural Comparison -->
-              <details class="tool-accordion">
-                <summary class="tool-summary">
-                  <span>⚖️ TCP vs. UDP Architectural Comparison</span>
-                  <span class="tool-tag">Reference Table</span>
-                </summary>
-                <div class="tool-body">
-                  <table class="comparison-table">
-                    <thead>
-                      <tr>
-                        <th>Property</th>
-                        <th>TCP (Transmission Control Protocol)</th>
-                        <th>UDP (User Datagram Protocol)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><strong>Connection</strong></td>
-                        <td>Connection-oriented (3-way handshake required)</td>
-                        <td>Connectionless (fire-and-forget datagrams)</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Reliability</strong></td>
-                        <td>Guaranteed in-order delivery via ACKs &amp; retransmissions</td>
-                        <td>Unreliable (packets can drop, duplicate, or reorder)</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Ordering</strong></td>
-                        <td>Strict byte-stream sequencing via 32-bit SEQ numbers</td>
-                        <td>No sequence tracking; datagram boundaries preserved</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Flow &amp; Congestion</strong></td>
-                        <td>Advertised Window (flow) + cwnd (congestion control)</td>
-                        <td>None (application must throttle itself)</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Header Overhead</strong></td>
-                        <td>20 to 60 bytes</td>
-                        <td>Minimal 8 bytes</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Use Cases</strong></td>
-                        <td>HTTP/1.1, HTTP/2, SMTP, SSH, File Transfers</td>
-                        <td>DNS queries, VoIP, live multiplayer gaming, DHCP</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </details>
+          <!-- Dock Pane 3: TCP vs UDP Comparison -->
+          <div class="dock-pane" id="pane-tcp-udp">
+            <div class="tool-content">
+              <table class="comparison-table">
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    <th>TCP (Transmission Control Protocol)</th>
+                    <th>UDP (User Datagram Protocol)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Connection</strong></td>
+                    <td>Connection-oriented (3-way handshake required)</td>
+                    <td>Connectionless (fire-and-forget datagrams)</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Reliability</strong></td>
+                    <td>Guaranteed in-order delivery via ACKs &amp; retransmission</td>
+                    <td>Unreliable (best-effort, no ACK mechanism)</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Sequencing</strong></td>
+                    <td>Strict byte-stream numbering (32-bit SEQ / ACK)</td>
+                    <td>No sequence tracking; message boundaries preserved</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Flow &amp; Congestion</strong></td>
+                    <td>Advertised Window (flow) + cwnd (congestion control)</td>
+                    <td>None (application must regulate its own sending rate)</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Header Size</strong></td>
+                    <td>20 to 60 bytes</td>
+                    <td>Minimal 8 bytes</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Applications</strong></td>
+                    <td>HTTP/1.1, HTTP/2, SMTP, SSH, File Transfer</td>
+                    <td>DNS lookups, VoIP, live streaming, multiplayer games</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-              <!-- Tool 3: Educational QUIC / HTTP/3 Overview -->
-              <details class="tool-accordion">
-                <summary class="tool-summary">
-                  <span>🚀 QUIC &amp; HTTP/3 Overview</span>
-                  <span class="tool-tag">Modern Evolution</span>
-                </summary>
-                <div class="tool-body">
-                  <p class="tool-desc">
-                    <strong>QUIC (RFC 9000)</strong> operates on top of <strong>UDP</strong> to overcome TCP limitations:
-                  </p>
-                  <ul class="quic-features-list">
-                    <li><strong>0-RTT Connection Establishment</strong>: Merges transport and TLS 1.3 cryptographic handshakes into a single round-trip.</li>
-                    <li><strong>No Head-of-Line (HoL) Blocking</strong>: Multiple HTTP streams are independently multiplexed. Dropping a packet in Stream 1 does NOT stall Stream 2!</li>
-                    <li><strong>Connection Migration</strong>: Connections are identified by a 64-bit Connection ID rather than the 4-tuple (IP:Port), allowing seamless switching between Wi-Fi and 5G cellular.</li>
-                  </ul>
-                </div>
-              </details>
+          <!-- Dock Pane 4: QUIC / HTTP/3 -->
+          <div class="dock-pane" id="pane-quic">
+            <div class="tool-content">
+              <p class="tool-desc">
+                <strong>QUIC (RFC 9000)</strong> operates on top of <strong>UDP</strong> in user-space to overcome fundamental TCP head-of-line bottlenecks:
+              </p>
+              <ul class="quic-features-list">
+                <li><strong>0-RTT Connection Establishment</strong>: Merges transport and TLS 1.3 cryptographic handshakes into a single round-trip.</li>
+                <li><strong>No Head-of-Line (HoL) Blocking</strong>: Multiple HTTP streams are independently multiplexed. A dropped packet in Stream 1 never blocks Stream 2!</li>
+                <li><strong>Connection Migration</strong>: Identifies connections via a 64-bit Connection ID rather than the IP:Port 4-tuple, enabling smooth transitions between Wi-Fi and 5G cellular.</li>
+              </ul>
+              <span class="simulation-disclaimer"><em>Educational Architecture Comparison (HTTP/3 Reference)</em></span>
+            </div>
+          </div>
 
-              <!-- Tool 4: Network Conditions Simulation (Fault Injection) -->
-              <details class="tool-accordion">
-                <summary class="tool-summary">
-                  <span>🧪 Network Fault Simulation (Loss &amp; Retransmission)</span>
-                  <span class="tool-tag">Interactive Simulation</span>
-                </summary>
-                <div class="tool-body">
-                  <p class="tool-desc">
-                    Toggle simulated packet loss to observe how TCP detects unacknowledged data via timer expiry (Retransmission Timeout - RTO) and initiates recovery.
-                  </p>
-                  <div class="fault-controls">
-                    <label class="toggle-switch">
-                      <input type="checkbox" id="checkbox-simulate-loss">
-                      <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label" id="loss-toggle-label">Simulate Packet Drop &amp; Retransmission: <strong>Disabled</strong></span>
-                  </div>
-                  <p class="simulation-disclaimer">
-                    <em>Notice: Deterministic Educational Simulation. Does not capture or inject physical network packets.</em>
-                  </p>
-                </div>
-              </details>
+          <!-- Dock Pane 5: Network Conditions & Fault Simulation -->
+          <div class="dock-pane" id="pane-fault">
+            <div class="tool-content">
+              <p class="tool-desc">
+                Inject deterministic packet drops to observe how TCP detects unacknowledged data via Retransmission Timeout (RTO) and retransmits identical sequence numbers.
+              </p>
+              <div class="fault-controls">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="checkbox-simulate-loss">
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label" id="loss-toggle-label">Simulate Packet Loss &amp; Retransmission: <strong>Disabled</strong></span>
+              </div>
+              <p class="simulation-disclaimer">
+                <em>Notice: Deterministic Educational Simulation. Does not drop real OS network packets.</em>
+              </p>
             </div>
           </div>
         </div>
@@ -689,7 +696,7 @@ Student Pair</textarea>
 
   <footer class="app-footer">
     <div class="footer-content">
-      <span>Computer Networks Course &bull; Layer 4 &amp; Layer 7 Protocol Simulator</span>
+      <span>Computer Networks Course &bull; Layer 4 (Transport) &amp; Layer 7 (Application) Visualizer</span>
       <span>RFC 793 (TCP) &bull; RFC 768 (UDP) &bull; RFC 9293 (TCP Modern) &bull; RFC 1035 (DNS) &bull; RFC 9112 (HTTP) &bull; RFC 5321 (SMTP)</span>
     </div>
   </footer>

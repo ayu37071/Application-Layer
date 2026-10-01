@@ -159,7 +159,7 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 460px 1fr;
+  grid-template-columns: 420px minmax(0, 1fr);
   gap: 1.25rem;
   align-items: start;
 }
@@ -468,6 +468,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 160px);
 }
 
 .activity-view {
@@ -1132,6 +1134,8 @@ body {
   border-radius: var(--radius-md);
   padding: 1rem;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 220px;
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
@@ -1140,7 +1144,7 @@ body {
   font-size: 0.8rem;
   line-height: 1.5;
   color: #e2e8f0;
-  white-space: pre-wrap;
+  white-space: pre;
   word-break: break-word;
 }
 
@@ -1228,6 +1232,79 @@ body {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.3px;
+}
+
+/* ==========================================================================
+   Analysis Dock Shelf (Bottom of Right Panel)
+   ========================================================================== */
+.analysis-dock-container {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.dock-nav-tabs {
+  display: flex;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 0;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.dock-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.dock-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.dock-tab.active {
+  color: var(--accent-blue);
+  border-bottom-color: var(--accent-blue);
+  background: var(--accent-blue-dim);
+}
+
+.dock-pane {
+  display: none;
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+  max-height: 220px;
+}
+
+.dock-pane.active {
+  display: block;
+}
+
+.tool-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.tool-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 /* ==========================================================================

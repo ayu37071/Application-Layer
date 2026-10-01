@@ -174,7 +174,7 @@
 
   function sendWS(action, data = {}) {
     if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
-      alert("WebSocket connection is not open yet. Please wait a moment.");
+      console.warn("WebSocket not ready yet; message dropped:", action);
       return;
     }
     const payload = { action, ...data };
@@ -625,6 +625,8 @@
       elements.viewLayerTransport.classList.add("active");
       elements.viewLayerApp.classList.remove("active");
     }
+    // Inform server so auto-play ticks in the right layer
+    sendWS("switch_layer", { params: { layer } });
   }
 
   // --- Mode Tab Switching ---
@@ -778,15 +780,27 @@
     });
 
     elements.btnPrevStep.addEventListener("click", () => {
-      sendWS("prev_step");
+      sendWS("prev_step", { params: { layer: state.activeLayer } });
     });
 
     elements.btnNextStep.addEventListener("click", () => {
-      sendWS("next_step");
+      sendWS("next_step", { params: { layer: state.activeLayer } });
     });
 
     elements.btnReplay.addEventListener("click", () => {
       sendWS("replay");
+    });
+
+    // Dock Tab Switcher
+    document.querySelectorAll(".dock-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const targetDock = tab.dataset.dock;
+        document.querySelectorAll(".dock-tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".dock-pane").forEach((p) => p.classList.remove("active"));
+        tab.classList.add("active");
+        const targetPane = document.getElementById(`pane-${targetDock}`);
+        if (targetPane) targetPane.classList.add("active");
+      });
     });
 
     // Network Conditions: Simulate Loss Toggle

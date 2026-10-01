@@ -126,6 +126,7 @@ class WSClientAction(str, Enum):
     REPLAY = "replay"
     SEEK = "seek"
     TOGGLE_LOSS = "toggle_loss"
+    SWITCH_LAYER = "switch_layer"
 
 
 class WSClientMessage(BaseModel):
