@@ -1,7 +1,7 @@
 """
-Pydantic Data Models for Application Layer Activity & Protocol Visualizer.
-Defines schemas for protocol events, highlight fields, playback states,
-and bidirectional WebSocket messages.
+Pydantic Data Models for Application & Transport Layer Activity & Protocol Visualizer.
+Defines schemas for application layer steps, transport layer TCP/UDP segments,
+highlight fields, playback states, statistics, and bidirectional WebSocket messages.
 """
 
 from enum import Enum
@@ -20,10 +20,28 @@ class ProtocolType(str, Enum):
     SMTP = "SMTP"
 
 
+class TransportProtocol(str, Enum):
+    TCP = "TCP"
+    UDP = "UDP"
+
+
 class ActivityType(str, Enum):
     BROWSING = "browsing"
     MAIL = "mail"
     STREAMING = "streaming"
+
+
+class TCPState(str, Enum):
+    CLOSED = "CLOSED"
+    LISTEN = "LISTEN"
+    SYN_SENT = "SYN-SENT"
+    SYN_RECEIVED = "SYN-RECEIVED"
+    ESTABLISHED = "ESTABLISHED"
+    FIN_WAIT_1 = "FIN-WAIT-1"
+    FIN_WAIT_2 = "FIN-WAIT-2"
+    CLOSE_WAIT = "CLOSE-WAIT"
+    LAST_ACK = "LAST-ACK"
+    TIME_WAIT = "TIME-WAIT"
 
 
 class HighlightField(BaseModel):
@@ -47,6 +65,48 @@ class ProtocolStep(BaseModel):
     )
     explanation: str = Field(..., description="Pedagogical explanation of what is happening")
     relative_time_ms: int = Field(..., description="Relative offset in milliseconds since activity trigger")
+    transport_segment_ids: List[int] = Field(
+        default_factory=list,
+        description="IDs of linked transport segments carrying this application message"
+    )
+
+
+class TransportSegment(BaseModel):
+    id: int = Field(..., description="1-indexed transport segment sequence ID")
+    total_segments: int = Field(..., description="Total transport segments in session")
+    protocol: TransportProtocol = Field(default=TransportProtocol.TCP, description="TCP or UDP")
+    direction: Direction = Field(..., description="client_to_server or server_to_client")
+    source_ip: str = Field(..., description="Source IPv4 address")
+    destination_ip: str = Field(..., description="Destination IPv4 address")
+    source_port: int = Field(..., description="Source port number")
+    destination_port: int = Field(..., description="Destination port number")
+    seq: int = Field(..., description="TCP Sequence Number")
+    ack: int = Field(..., description="TCP Acknowledgement Number")
+    window: int = Field(default=64240, description="Advertised receive window size in bytes")
+    flags: List[str] = Field(default_factory=list, description="TCP control flags e.g. ['SYN'], ['ACK', 'PSH']")
+    payload_length: int = Field(default=0, description="Transport payload length in bytes")
+    application_event_id: Optional[int] = Field(
+        default=None,
+        description="Linked Application Layer step_id, if this segment transports an application message"
+    )
+    client_state: str = Field(default=TCPState.CLOSED.value, description="Client TCP connection state")
+    server_state: str = Field(default=TCPState.LISTEN.value, description="Server TCP connection state")
+    summary: str = Field(..., description="One-line transport summary e.g. 'TCP [SYN] Seq=1000 Win=64240'")
+    raw_segment: str = Field(..., description="Formatted ASCII TCP/UDP header dissection")
+    explanation: str = Field(..., description="Pedagogical explanation of TCP transport mechanics")
+    relative_time_ms: int = Field(default=0, description="Relative timestamp offset in milliseconds")
+    retransmission: bool = Field(default=False, description="True if segment simulates a retransmission")
+
+
+class TransportStats(BaseModel):
+    total_packets: int = 0
+    tcp_segments: int = 0
+    application_messages: int = 0
+    total_bytes: int = 0
+    retransmissions: int = 0
+    client_state: str = TCPState.CLOSED.value
+    server_state: str = TCPState.LISTEN.value
+    cwnd: int = 1  # In segments (MSS)
 
 
 class StepSummary(BaseModel):
@@ -54,6 +114,7 @@ class StepSummary(BaseModel):
     protocol: ProtocolType
     direction: Direction
     summary: str
+    transport_segment_ids: List[int] = Field(default_factory=list)
 
 
 class WSClientAction(str, Enum):
@@ -64,6 +125,7 @@ class WSClientAction(str, Enum):
     PREV_STEP = "prev_step"
     REPLAY = "replay"
     SEEK = "seek"
+    TOGGLE_LOSS = "toggle_loss"
 
 
 class WSClientMessage(BaseModel):
@@ -71,6 +133,7 @@ class WSClientMessage(BaseModel):
     activity_type: Optional[ActivityType] = None
     params: Optional[Dict[str, Any]] = None
     target_step: Optional[int] = None
+    simulate_loss: Optional[bool] = None
 
 
 class WSServerEvent(str, Enum):
@@ -89,6 +152,9 @@ class WSServerMessage(BaseModel):
     is_playing: bool = False
     step: Optional[ProtocolStep] = None
     all_steps_summary: Optional[List[StepSummary]] = None
+    transport_segments: Optional[List[TransportSegment]] = None
+    current_transport_segment: Optional[TransportSegment] = None
+    transport_stats: Optional[TransportStats] = None
     log_message: Optional[str] = None
     status_text: Optional[str] = None
     error_message: Optional[str] = None

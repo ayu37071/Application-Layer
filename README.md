@@ -1,26 +1,26 @@
-# Application Layer Activity & Protocol Visualizer
+# Computer Networks Laboratory: Dual-Panel Activity, Application & Transport Layer Protocol Visualizer
 
-An interactive, educational web dashboard designed for **Computer Networks – Application Layer (Layer 7)** course projects. It visually bridges everyday user interactions (**Web Browsing**, **Email Dispatch**, and **Adaptive Video Streaming**) with their real, RFC-compliant protocol exchanges (**DNS**, **HTTP/1.1**, **SMTP**, and **HLS**) through real-time progressive WebSocket synchronization.
+An interactive, educational web dashboard designed for **Computer Networks (Layer 4 & Layer 7)** course projects. It visually bridges everyday user interactions (**Web Browsing**, **Email Dispatch**, and **Adaptive Video Streaming**) with their real, RFC-compliant protocol exchanges:
+* **Application Layer (Layer 7)**: DNS (RFC 1035), HTTP/1.1 (RFC 9112), SMTP (RFC 5321), and HLS (RFC 8216).
+* **Transport Layer (Layer 4)**: TCP 3-Way Handshake, Sequence/ACK Arithmetic (RFC 793 / RFC 9293), Flow Control Receive Window, 10-State Machine, 4-Way Teardown, UDP comparison, and educational QUIC overview.
 
 ---
 
-## Architecture Overview
-
-The system strictly follows a decoupled **two-panel architecture**:
+## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           Client Browser                                    │
 │  ┌───────────────────────────────┐     ┌─────────────────────────────────┐  │
-│  │    LEFT: Activity Panel       │     │  RIGHT: Protocol Visualizer     │  │
-│  │  - Browsing (URL, Visit)      │     │  - Playback Bar (⏮ ◀ ⏸ ▶ ⏭)     │  │
-│  │  - Mail (To, Subject, Body)   │     │  - Direction Diagram (C ──▶ S)  │  │
-│  │  - Streaming (Play, Quality)  │     │  - Key Fields & Raw Wire Data   │  │
-│  │  - Activity Log & Status      │     │  - Cumulative Step Timeline     │  │
-│  └──────────────┬────────────────┘     └────────────────▲────────────────┘  │
-│                 │                                       │                   │
-│                 │ Activity Action                       │ Step Updates &    │
-│                 │ (start_activity)                      │ State Sync        │
+│  │    LEFT: Activity Panel       │     │  RIGHT: Dual-Layer Visualizer   │  │
+│  │  - Browsing (URL, Visit)      │     │  ┌───────────────────────────┐  │  │
+│  │  - Mail (To, Subject, Body)   │     │  │ [APP LAYER]   [TRANS LAYER]│ │  │
+│  │  - Streaming (Play, Quality)  │     │  └───────────────────────────┘  │  │
+│  │  - Activity Log & Status      │     │  - TCP State (ESTABLISHED)      │  │
+│  └──────────────┬────────────────┘     │  - Direction Diagram (C ──▶ S)  │  │
+│                 │                      │  - Key Fields & Wire ASCII      │  │
+│                 │ Activity Action      │  - Telemetry & cwnd Model       │  │
+│                 │ (start_activity)     └────────────────▲────────────────┘  │
 └─────────────────┼───────────────────────────────────────┼───────────────────┘
                   │                                       │
                   │ WebSocket Connection (/ws)            │
@@ -32,77 +32,90 @@ The system strictly follows a decoupled **two-panel architecture**:
 │  │      main.py (FastAPI)       │     │     websocket_manager.py         │  │
 │  │  - Serves static assets & UI │◄───►│  - Connection lifecycle          │  │
 │  │  - Manages /ws endpoint      │     │  - Session state (step, playing) │  │
-│  └──────────────┬───────────────┘     │  - Playback loop (asyncio timer) │  │
+│  └──────────────┬───────────────┘     │  - Bidirectional sync coordinator│  │
 │                 │                     └─────────────────▲────────────────┘  │
-│                 │ Invokes                               │ Streams           │
-│                 ▼                                       │ Generated Steps   │
-│  ┌──────────────────────────────┐     ┌─────────────────┴────────────────┐  │
-│  │   protocol_simulator.py      │     │      protocol_models.py          │  │
-│  │  - DNS query/response gen    │────►│  - ProtocolStep, Direction       │  │
-│  │  - HTTP/1.1 transaction gen  │     │  - HighlightField, SessionState  │  │
-│  │  - SMTP state machine gen    │     │  - WSClientMessage & WSServerMsg │  │
-│  │  - HLS manifest & chunks gen │     └──────────────────────────────────┘  │
+│                 ├── Generates L7                        │                   │
+│                 ▼                                       │                   │
+│  ┌──────────────────────────────┐                       │ Streams           │
+│  │   protocol_simulator.py      │                       │ Coordinated Steps │
+│  │  - DNS query/response gen    │                       │                   │
+│  │  - HTTP/1.1 transaction gen  │                       │                   │
+│  │  - SMTP state machine gen    │                       │                   │
+│  └──────────────┬───────────────┘                       │                   │
+│                 │ Passes App Steps                      │                   │
+│                 ▼                                       │                   │
+│  ┌──────────────────────────────┐                       │                   │
+│  │   transport_simulator.py     │───────────────────────┘                   │
+│  │  - TCP 3-Way Handshake       │                                           │
+│  │  - Exact Seq/Ack Arithmetic  │                                           │
+│  │  - 10-State Connection FSM   │                                           │
+│  │  - 4-Way Teardown (FIN/ACK)  │                                           │
+│  │  - Fault/Loss Simulation     │                                           │
 │  └──────────────────────────────┘                                           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### UI Layout
-- **Left Panel (Activity Panel)**: Provides interactive forms for the 3 activities, live status badges, preset suggestions, and a scrolling activity event log.
-- **Right Panel (Protocol Visualization Panel)**: Displays animated packet directions (`Client ──▶ Server` or `Server ──▶ Client`), sequence numbering, millisecond timing offsets, parsed key fields (Status codes, Transaction IDs, URIs), wire-accurate ASCII payloads, and educational explanations.
+---
 
-On screens under 1100px width, the panels seamlessly stack vertically for mobile and tablet responsiveness.
+## Assignment 2: Transport Layer Features
+
+### 1. Dual-Layer Visualization (Right Panel Tabs)
+The Right Panel features two synchronized views representing the **same** user interaction:
+- **`[ 🌐 APPLICATION LAYER ]`**: Shows DNS queries, HTTP GET request/response, SMTP commands (EHLO, MAIL FROM, RCPT TO, DATA), and HLS playlists.
+- **`[ ⚡ TRANSPORT LAYER ]`**: Visualizes the underlying TCP byte stream, 3-way handshake, payload segmentation, sequence/ACK progression, window advertisements, and connection teardown.
+
+### 2. TCP 3-Way Handshake (RFC 793)
+- **Segment 1 (Client &rarr; Server)**: `[SYN] Seq=1000 Ack=0 Win=64240`. Client transitions from `CLOSED` &rarr; `SYN-SENT`.
+- **Segment 2 (Server &rarr; Client)**: `[SYN, ACK] Seq=5000 Ack=1001 Win=64240`. Server synchronizes sequence numbers, acknowledging the client's SYN (`1000 + 1`).
+- **Segment 3 (Client &rarr; Server)**: `[ACK] Seq=1001 Ack=5001 Win=64240`. Client confirms server ISN. Both endpoints enter `ESTABLISHED`.
+
+### 3. Exact Sequence and Acknowledgement Arithmetic Engine
+- **SYN Flag**: Consumes exactly 1 sequence number (`Ack = Seq + 1`).
+- **FIN Flag**: Consumes exactly 1 sequence number (`Ack = Seq + 1`).
+- **Data Segments**: Advance sequence numbers strictly according to byte payload length (`Next_Seq = Seq + Payload_Length`).
+- **Cumulative ACKs**: Acknowledge the next continuous byte expected by the receiver (`Ack = Seq + Length`).
+- No arbitrary or randomized numbers are used; all values are mathematically verified.
+
+### 4. TCP 10-State Connection Machine
+The simulator models all standardized TCP states:
+`CLOSED`, `LISTEN`, `SYN-SENT`, `SYN-RECEIVED`, `ESTABLISHED`, `FIN-WAIT-1`, `FIN-WAIT-2`, `CLOSE-WAIT`, `LAST-ACK`, and `TIME-WAIT`.
+Live state indicators display the instantaneous status for both Client and Server.
+
+### 5. TCP 4-Way Connection Teardown
+- **Segment 1 (Client &rarr; Server)**: `[FIN, ACK]` &rarr; Client enters `FIN-WAIT-1`.
+- **Segment 2 (Server &rarr; Client)**: `[ACK]` &rarr; Server enters `CLOSE-WAIT`, Client enters `FIN-WAIT-2`.
+- **Segment 3 (Server &rarr; Client)**: `[FIN, ACK]` &rarr; Server enters `LAST-ACK`.
+- **Segment 4 (Client &rarr; Server)**: `[ACK]` &rarr; Client enters `TIME-WAIT` (2 MSL timer), Server enters `CLOSED`.
+
+### 6. Activity Mappings
+- **Web Browsing**: DNS over UDP port 53 &rarr; TCP Handshake &rarr; HTTP GET carried over TCP (`PSH, ACK`) &rarr; Server ACK &rarr; HTTP 200 delivered over TCP &rarr; Client ACK &rarr; 4-way Teardown.
+- **Electronic Mail**: TCP Handshake to port 25 &rarr; SMTP dialogue transported sequentially across the TCP byte stream (`220`, `EHLO`, `MAIL FROM`, `RCPT TO`, `DATA`, `MIME body`, `QUIT`) &rarr; Teardown.
+- **Streaming Media**: DNS over UDP &rarr; Handshake &rarr; Manifest downloads &rarr; Media segment download split into consecutive Maximum Segment Size (MSS 1460B) chunks with cumulative ACKs.
+
+### 7. Bidirectional Application &harr; Transport Synchronization
+- Every `TransportSegment` maintains an `application_event_id` referencing the corresponding Application Step.
+- Every `ProtocolStep` maintains a list of `transport_segment_ids`.
+- In the UI:
+  - Clicking an Application Step displays its underlying transport segments with a 1-click jump button.
+  - Clicking any Transport Segment displays the associated Application message with a 1-click jump button.
+
+### 8. Educational Analysis Tools
+- **Congestion Window (cwnd) Graph**: Visualizes exponential growth during **Slow Start** (`1 -> 2 -> 4 -> 8 MSS`) transitioning to linear growth in **Congestion Avoidance** (`+1 MSS / RTT`). *(Clearly labeled: Simplified educational model)*.
+- **TCP vs. UDP Reference Table**: Contrasts connection-oriented vs connectionless, ordering, reliability, header sizes, and use cases.
+- **QUIC / HTTP/3 Overview**: Explains how modern protocols leverage UDP to eliminate head-of-line blocking and achieve 0-RTT handshakes.
+- **Simulated Packet Loss & Recovery**: Toggleable fault simulator demonstrating how lost segments trigger Retransmission Timeouts (RTO) and duplicate sequence recovery.
 
 ---
 
-## Supported Application Layer Flows
+## Playback Controls
 
-### 1. Web Browsing Flow (DNS + HTTP/1.1)
-Demonstrates the two-stage process required to fetch a webpage:
-1. **Step 1 — DNS Query (`Client ──▶ DNS Server:53`)**: Standard UDP query asking for the IPv4 (A record) of the requested domain, with Transaction ID and Recursion Desired (`0x0100`).
-2. **Step 2 — DNS Response (`DNS Server:53 ──▶ Client`)**: Returns the resolved IPv4 address, TTL cache duration (300 seconds), and NoError status code.
-3. **Step 3 — HTTP GET Request (`Client ──▶ Web Server:80`)**: RFC 9112 HTTP/1.1 GET request featuring `Host`, `User-Agent`, `Accept`, and `Connection: keep-alive` headers.
-4. **Step 4 — HTTP 200 OK Response (`Web Server:80 ──▶ Client`)**: HTTP/1.1 response delivering headers (`Content-Type: text/html`, `Content-Length`) and the HTML entity body.
-
-### 2. Electronic Mail Flow (SMTP - RFC 5321)
-Demonstrates the classic 13-step client-server dialog over TCP port 25:
-1. `220` Service Ready greeting from MTA.
-2. `EHLO client.fqdn` from client.
-3. `250` Multi-line response listing server ESMTP extensions (`PIPELINING`, `SIZE`, `8BITMIME`).
-4. `MAIL FROM:<sender>` envelope sender declaration.
-5. `250 2.1.0` Sender OK response.
-6. `RCPT TO:<recipient>` envelope recipient declaration.
-7. `250 2.1.5` Recipient OK response.
-8. `DATA` request to transition from envelope to message content.
-9. `354` Start mail input instructions (`end with <CRLF>.<CRLF>`).
-10. MIME headers (`From`, `To`, `Subject`, `Message-ID`, `Date`), blank separator, message body, and terminal period (`.`).
-11. `250 2.0.0` Queued confirmation with internal spool ID.
-12. `QUIT` orderly termination command.
-13. `221 2.0.0` Bye closing transmission channel.
-
-### 3. Adaptive Video Streaming Flow (HLS Paradigm)
-Demonstrates chunk-based media delivery over standard HTTP:
-1. DNS Query for CDN hostname (`cdn.streamnet.tv`).
-2. DNS Response returning CDN edge node IP.
-3. HTTP GET for `master.m3u8` master manifest.
-4. HTTP 200 OK returning master manifest with multiple bitrate streams (`#EXT-X-STREAM-INF` for 360p, 720p, and 1080p).
-5. HTTP GET for media variant playlist (`720p/playlist.m3u8`).
-6. HTTP 200 OK returning 4-second video chunk list (`#EXTINF:4.000, segment_1042.ts`).
-7. HTTP GET for initial segment (`segment_1042.ts`).
-8. HTTP 200 OK delivering MPEG-TS chunk (~1.2 MB).
-9. HTTP GET for subsequent segment (`segment_1043.ts`).
-10. HTTP 200 OK delivering MPEG-TS chunk while updating buffer health.
-
----
-
-## Interactive Playback Controls
-
-The toolbar in the Protocol Visualization Panel allows full temporal navigation:
-- **⏸ Pause**: Halts the automatic step ticker so students can inspect packet details at their own pace.
-- **▶ Resume**: Continues automated progression from the current step.
-- **◀ Prev**: Decrements the sequence pointer to inspect previous packets.
+The toolbar controls both Application and Transport views in lockstep:
+- **⏸ Pause**: Freezes progression to inspect packet headers and states.
+- **▶ Resume**: Continues automated progression (1.3s interval).
+- **◀ Prev**: Decrements one step backward.
 - **Next ▶**: Advances exactly one step forward.
-- **⏮ Replay**: Rewinds the exchange to Step 1 and restarts automatic playback.
-- **Interactive Timeline**: Click any node in the top stepper bar to jump directly to that protocol step.
+- **⏮ Replay**: Resets session to Step 1 and restarts auto-play.
+- **Timeline Scrubbing**: Click any node on either the Application or Transport stepper to navigate directly.
 
 ---
 
@@ -113,17 +126,19 @@ network-visualizer/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py                     # FastAPI application & WebSocket router
-│   ├── protocol_models.py          # Pydantic data schemas for steps & WS messages
-│   ├── protocol_simulator.py       # Deterministic RFC-accurate protocol engines
-│   ├── websocket_manager.py        # Connection manager & interactive playback ticker
+│   ├── protocol_models.py          # Pydantic data schemas (L4 & L7 events, stats)
+│   ├── protocol_simulator.py       # Application layer generators (DNS, HTTP, SMTP, HLS)
+│   ├── transport_simulator.py      # TCP connection simulator, seq/ack math & state machine
+│   ├── websocket_manager.py        # WebSocket controller with synchronized cross-layer streaming
 │   ├── templates/
-│   │   └── index.html              # Clean semantic HTML5 (strict 2-panel layout)
+│   │   └── index.html              # Dual-panel semantic HTML5 with layer switcher tabs
 │   └── static/
-│       ├── style.css               # Responsive design, directional animations, dark-tech theme
-│       └── app.js                  # Vanilla JS WebSocket client & dynamic DOM visualizer
+│       ├── style.css               # Responsive styles, TCP flags, state pills, cwnd chart
+│       └── app.js                  # Vanilla JS WebSocket client, tab switcher, sync manager
 ├── tests/
 │   ├── __init__.py
-│   └── test_protocol_simulator.py  # Pytest suite for all 3 flows and WebSocket lifecycle
+│   ├── test_protocol_simulator.py  # Assignment 1 test suite (Application Layer)
+│   └── test_transport_simulator.py # Assignment 2 test suite (Transport Layer & Synchronization)
 ├── requirements.txt
 ├── README.md
 └── .gitignore
@@ -133,47 +148,41 @@ network-visualizer/
 
 ## Setup & Running Instructions
 
-### Prerequisites
-- Python 3.13+ installed (managed via `uv` or system Python)
-
 ### 1. Virtual Environment & Dependencies
 ```bash
-# Clone or navigate to the project directory
 cd /Users/ayushchauhan/.gemini/antigravity/scratch/network-visualizer
 
-# Create a virtual environment using Python 3.13
-uv venv --python 3.13 .venv
-
-# Activate the virtual environment
+# Activate Python 3.13 virtual environment
 source .venv/bin/activate
 
 # Install requirements
-uv pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-### 2. Run the Automated Test Suite
+### 2. Run Automated Test Suite
 ```bash
-pytest tests/test_protocol_simulator.py -v
+pytest tests/ -v
 ```
-All 6 tests verify protocol sequence integrity, RFC keywords, HTTP endpoints, and WebSocket transitions.
+All **15 automated tests** execute in under 0.2 seconds, validating:
+- Application Layer: Browsing, Mail, Streaming, factory utilities, and web endpoints.
+- Transport Layer: TCP Handshake, Seq/Ack arithmetic, state machine transitions, 4-way teardown, HTTP-over-TCP, SMTP-over-TCP, HLS segmentation, fault injection, and WebSocket synchronization.
 
-### 3. Start the Web Server
+### 3. Launch the Server
 ```bash
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
-
-Open your browser and navigate to:
-```
-http://127.0.0.1:8000
-```
+Open your browser at:
+**`http://127.0.0.1:8000`**
 
 ---
 
-## Student Viva & Presentation Notes
+## Educational Disclaimers & Assumptions
 
-When presenting this project to your instructor, highlight these key design principles:
+1. **Deterministic Simulation**: All TCP sequence numbers, acknowledgements, and states are generated deterministically according to RFC 793 and RFC 9293 specifications. This application does not bind to raw network sockets or capture live OS network adapters, ensuring 100% reliable execution in restrictive lab/firewall environments.
+2. **Simplified Congestion Control**: The cwnd visualization demonstrates standard textbook Tahoe/Reno concepts (Slow Start & Congestion Avoidance) for pedagogical clarity, without implementing complex kernel-level loss-recovery heuristics (BBR, CUBIC).
+3. **Layer Abstraction**: The simulator explicitly focuses on Layer 4 and Layer 7 dialogue. Lower layers (IP framing, ARP, Ethernet preamble) are omitted to focus student attention on transport-layer mechanisms.
 
-1. **Layer 7 Focus**: Lower layer handshakes (TCP 3-way handshake `SYN, SYN-ACK, ACK`, TLS 1.3 key exchange, IP routing) occur transparently beneath the application layer. By focusing on Layer 7, students observe exact ASCII protocol grammar (HTTP verbs, SMTP reply codes, DNS resource records) without packet fragmentation noise.
-2. **Deterministic Simulation vs. Live Sockets**: Real-world SMTP traffic over port 25 is actively filtered by residential and university ISPs to prevent spam. Simulation ensures 100% reliable, reproducible classroom demonstrations while remaining RFC-accurate.
-3. **Adaptive Bitrate Streaming (ABR)**: Explaining why modern video services use HTTP (HLS/DASH) rather than raw UDP streaming highlights that HTTP seamlessly passes through NATs, firewalls, and leverages existing web caching infrastructure.
-# Application-Layer
+---
+
+## AI-Assisted Development Notes
+This project was developed with the assistance of Antigravity AI pair programming, focusing on rigorous RFC compliance, clean decoupled Python architecture, and student-accessible visualization.

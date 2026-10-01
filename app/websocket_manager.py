@@ -1,7 +1,8 @@
 """
-WebSocket Manager for Application Layer Activity & Protocol Visualizer.
+WebSocket Manager for Application & Transport Layer Activity & Protocol Visualizer.
 Manages per-client connection state, progressive auto-play ticker loop,
-and interactive playback controls (Pause, Resume, Next, Prev, Replay, Seek).
+interactive playback controls (Pause, Resume, Next, Prev, Replay, Seek),
+and coordinated Application <-> Transport layer event synchronization.
 """
 
 import asyncio
@@ -13,6 +14,7 @@ from fastapi import WebSocket, WebSocketDisconnect
 from app.protocol_models import (
     ActivityType,
     ProtocolStep,
+    TransportSegment,
     WSClientAction,
     WSClientMessage,
     WSServerEvent,
@@ -21,6 +23,11 @@ from app.protocol_models import (
 from app.protocol_simulator import (
     generate_steps_for_activity,
     get_step_summaries,
+)
+from app.transport_simulator import (
+    calculate_transport_stats,
+    generate_transport_segments_for_activity,
+    link_application_and_transport_steps,
 )
 
 logger = logging.getLogger("websocket_manager")
@@ -34,8 +41,10 @@ class PlaybackSession:
         self.step_interval_sec = step_interval_sec
         self.activity_type: Optional[ActivityType] = None
         self.steps: List[ProtocolStep] = []
+        self.transport_segments: List[TransportSegment] = []
         self.current_step_index: int = 0  # 1-indexed when active (1 to N)
         self.is_playing: bool = False
+        self.simulate_loss: bool = False
         self._ticker_task: Optional[asyncio.Task] = None
         self._lock = asyncio.Lock()
 
@@ -88,6 +97,8 @@ class PlaybackSession:
                 await self._action_replay()
             elif action == WSClientAction.SEEK:
                 await self._action_seek(client_msg.target_step)
+            elif action == WSClientAction.TOGGLE_LOSS:
+                await self._action_toggle_loss(client_msg.simulate_loss)
 
     async def _action_start(
         self, activity_type: Optional[ActivityType], params: Optional[Dict[str, Any]]
@@ -103,14 +114,25 @@ class PlaybackSession:
 
         self._cancel_ticker()
         self.activity_type = activity_type
+
+        # 1. Generate Application Layer Steps
         self.steps = generate_steps_for_activity(activity_type, params)
+
+        # 2. Generate Transport Layer Segments & Cross-Link
+        self.transport_segments = generate_transport_segments_for_activity(
+            activity_type, self.steps, self.simulate_loss
+        )
+        link_application_and_transport_steps(self.steps, self.transport_segments)
+
         self.current_step_index = 1
         self.is_playing = True
 
         summaries = get_step_summaries(self.steps)
         initial_step = self.steps[0]
+        initial_transport = self._get_transport_for_app_step(initial_step)
+        stats = calculate_transport_stats(self.transport_segments, self.steps)
 
-        # 1. Announce new session initialization with full steps outline
+        # 3. Announce new session initialization with both layers
         await self.send_event(
             WSServerMessage(
                 event=WSServerEvent.SESSION_INITIALIZED,
@@ -120,13 +142,25 @@ class PlaybackSession:
                 is_playing=True,
                 step=initial_step,
                 all_steps_summary=summaries,
-                log_message=f"Initialized {activity_type.value.upper()} exchange ({len(self.steps)} steps)",
+                transport_segments=self.transport_segments,
+                current_transport_segment=initial_transport,
+                transport_stats=stats,
+                log_message=f"Initialized {activity_type.value.upper()} exchange ({len(self.steps)} app steps, {len(self.transport_segments)} transport segments)",
                 status_text=f"Active: {activity_type.value.capitalize()} in progress",
             )
         )
 
-        # 2. Start background ticker for progressive steps
+        # 4. Start progressive background ticker loop
         self._ticker_task = asyncio.create_task(self._playback_loop())
+
+    def _get_transport_for_app_step(self, app_step: ProtocolStep) -> Optional[TransportSegment]:
+        """Find the most relevant transport segment matching an application step."""
+        if app_step.transport_segment_ids and self.transport_segments:
+            target_id = app_step.transport_segment_ids[0]
+            for seg in self.transport_segments:
+                if seg.id == target_id:
+                    return seg
+        return self.transport_segments[0] if self.transport_segments else None
 
     async def _playback_loop(self) -> None:
         """Progressively advances through protocol steps with calibrated delay."""
@@ -140,6 +174,9 @@ class PlaybackSession:
                     if self.current_step_index < len(self.steps):
                         self.current_step_index += 1
                         step_data = self.steps[self.current_step_index - 1]
+                        transport_data = self._get_transport_for_app_step(step_data)
+                        stats = calculate_transport_stats(self.transport_segments, self.steps)
+
                         is_last = self.current_step_index == len(self.steps)
                         if is_last:
                             self.is_playing = False
@@ -152,6 +189,8 @@ class PlaybackSession:
                                 total_steps=len(self.steps),
                                 is_playing=self.is_playing,
                                 step=step_data,
+                                current_transport_segment=transport_data,
+                                transport_stats=stats,
                                 log_message=f"Step {self.current_step_index}/{len(self.steps)}: {step_data.summary}",
                                 status_text="Completed" if is_last else "Streaming steps...",
                             )
@@ -183,7 +222,6 @@ class PlaybackSession:
             return
 
         if self.current_step_index >= len(self.steps):
-            # Rewind if finished
             self.current_step_index = 1
             await self._push_current_step("Replaying exchange from beginning")
 
@@ -267,8 +305,42 @@ class PlaybackSession:
             self.current_step_index = target_step
             await self._push_current_step(f"Jumped to step {target_step}")
 
+    async def _action_toggle_loss(self, simulate_loss: Optional[bool]) -> None:
+        if simulate_loss is not None:
+            self.simulate_loss = simulate_loss
+        else:
+            self.simulate_loss = not self.simulate_loss
+
+        if self.activity_type and self.steps:
+            self.transport_segments = generate_transport_segments_for_activity(
+                self.activity_type, self.steps, self.simulate_loss
+            )
+            link_application_and_transport_steps(self.steps, self.transport_segments)
+            stats = calculate_transport_stats(self.transport_segments, self.steps)
+            current_step = self.steps[self.current_step_index - 1]
+            current_transport = self._get_transport_for_app_step(current_step)
+
+            await self.send_event(
+                WSServerMessage(
+                    event=WSServerEvent.STEP_UPDATE,
+                    activity_type=self.activity_type,
+                    current_step_index=self.current_step_index,
+                    total_steps=len(self.steps),
+                    is_playing=self.is_playing,
+                    step=current_step,
+                    transport_segments=self.transport_segments,
+                    current_transport_segment=current_transport,
+                    transport_stats=stats,
+                    log_message=f"Network condition updated: Packet Loss Simulation {'Enabled' if self.simulate_loss else 'Disabled'}",
+                    status_text=f"Loss Sim: {'ON' if self.simulate_loss else 'OFF'}",
+                )
+            )
+
     async def _push_current_step(self, log_note: str) -> None:
         step_data = self.steps[self.current_step_index - 1]
+        transport_data = self._get_transport_for_app_step(step_data)
+        stats = calculate_transport_stats(self.transport_segments, self.steps)
+
         await self.send_event(
             WSServerMessage(
                 event=WSServerEvent.STEP_UPDATE,
@@ -277,6 +349,8 @@ class PlaybackSession:
                 total_steps=len(self.steps),
                 is_playing=self.is_playing,
                 step=step_data,
+                current_transport_segment=transport_data,
+                transport_stats=stats,
                 log_message=f"[{step_data.protocol.value}] {log_note}: {step_data.summary}",
                 status_text=f"Step {self.current_step_index}/{len(self.steps)}",
             )

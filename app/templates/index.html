@@ -14,10 +14,10 @@
   <header class="app-header">
     <div class="header-content">
       <div class="header-branding">
-        <div class="logo-badge">L7</div>
+        <div class="logo-badge">L4/L7</div>
         <div>
-          <h1>Application Layer Activity &amp; Protocol Visualizer</h1>
-          <p class="subtitle">Computer Networks Lab &bull; Interactive DNS, HTTP &amp; SMTP Protocol Inspector</p>
+          <h1>Application &amp; Transport Layer Protocol Visualizer</h1>
+          <p class="subtitle">Computer Networks Lab &bull; Dual-Panel Activity &amp; Synchronized Protocol Visualizer</p>
         </div>
       </div>
       <div class="header-status">
@@ -42,7 +42,7 @@
             <span class="panel-index">1</span>
             <h2>Activity Panel</h2>
           </div>
-          <span class="panel-subtitle">Select an activity to generate protocol events</span>
+          <span class="panel-subtitle">Select an activity to trigger protocol exchanges</span>
         </div>
 
         <!-- Mode Selector Tabs -->
@@ -65,8 +65,8 @@
           <!-- A. Browsing Activity View -->
           <div class="activity-view active" id="view-browsing">
             <div class="view-header">
-              <h3>Web Browsing (HTTP/1.1 &amp; DNS)</h3>
-              <p class="view-desc">Simulates URL lookup via DNS A-record resolution, followed by an HTTP GET dialogue.</p>
+              <h3>Web Browsing (DNS, HTTP/1.1 &amp; TCP)</h3>
+              <p class="view-desc">Simulates domain resolution via DNS, TCP 3-Way Handshake, and HTTP GET dialogue over port 80.</p>
             </div>
 
             <form id="form-browsing" onsubmit="return false;">
@@ -109,7 +109,7 @@
                 <button type="button" class="btn-clear-log" data-target="browsing-log-content">Clear</button>
               </div>
               <div class="log-content" id="browsing-log-content">
-                <div class="log-entry log-system">Ready. Enter a URL and click "Visit" to trigger DNS &amp; HTTP.</div>
+                <div class="log-entry log-system">Ready. Enter a URL and click "Visit" to trigger DNS, TCP &amp; HTTP.</div>
               </div>
             </div>
           </div>
@@ -117,8 +117,8 @@
           <!-- B. Mail Activity View -->
           <div class="activity-view" id="view-mail">
             <div class="view-header">
-              <h3>Electronic Mail (SMTP &amp; MIME)</h3>
-              <p class="view-desc">Simulates an RFC 5321 mail transaction state machine from handshake to termination.</p>
+              <h3>Electronic Mail (SMTP &amp; TCP Byte Stream)</h3>
+              <p class="view-desc">Simulates TCP handshake to Port 25 followed by an RFC 5321 mail transaction state machine.</p>
             </div>
 
             <form id="form-mail" onsubmit="return false;">
@@ -138,7 +138,7 @@
                 <input
                   type="text"
                   id="mail-subject"
-                  value="Computer Networks Project: Layer 7 Visualizer"
+                  value="Computer Networks Project: Layer 4 &amp; 7 Visualizer"
                   required
                 >
               </div>
@@ -147,9 +147,9 @@
                 <label for="mail-body">Message Body</label>
                 <textarea id="mail-body" rows="4" required>Dear Professor,
 
-Here is our submission for the Computer Networks application-layer visualizer.
+Here is our submission for the Computer Networks application &amp; transport layer visualizer.
 
-Protocol stack: DNS, HTTP/1.1, and SMTP.
+Protocol stack: DNS, HTTP/1.1, SMTP, TCP, and UDP.
 
 Best regards,
 Student Pair</textarea>
@@ -176,7 +176,7 @@ Student Pair</textarea>
                 <button type="button" class="btn-clear-log" data-target="mail-log-content">Clear</button>
               </div>
               <div class="log-content" id="mail-log-content">
-                <div class="log-entry log-system">Ready. Fill out fields and click "Send Mail" to start SMTP transaction.</div>
+                <div class="log-entry log-system">Ready. Fill out fields and click "Send Mail" to start SMTP over TCP.</div>
               </div>
             </div>
           </div>
@@ -184,8 +184,8 @@ Student Pair</textarea>
           <!-- C. Streaming Activity View -->
           <div class="activity-view" id="view-streaming">
             <div class="view-header">
-              <h3>Adaptive Video Streaming (HLS / MPEG-DASH)</h3>
-              <p class="view-desc">Demonstrates chunk-based media distribution over HTTP with Master &amp; Media playlists.</p>
+              <h3>Adaptive Video Streaming (HLS / DASH over TCP)</h3>
+              <p class="view-desc">Demonstrates chunk-based media distribution over persistent TCP byte stream.</p>
             </div>
 
             <form id="form-streaming" onsubmit="return false;">
@@ -238,7 +238,7 @@ Student Pair</textarea>
                 <button type="button" class="btn-clear-log" data-target="stream-log-content">Clear</button>
               </div>
               <div class="log-content" id="stream-log-content">
-                <div class="log-entry log-system">Ready. Select quality and press "Play Stream" to fetch HLS manifests &amp; media segments.</div>
+                <div class="log-entry log-system">Ready. Select quality and press "Play Stream" to fetch HLS manifests &amp; media segments over TCP.</div>
               </div>
             </div>
           </div>
@@ -270,7 +270,25 @@ Student Pair</textarea>
           </div>
         </div>
 
-        <!-- Flow State Progress Bar & Step Tracker -->
+        <!-- LAYER SWITCHER TABS (Application Layer vs Transport Layer) -->
+        <nav class="layer-nav-tabs" aria-label="Protocol Layer Switcher">
+          <button class="layer-tab active" data-layer="application" id="tab-layer-app">
+            <span class="layer-icon">🌐</span>
+            <div class="layer-tab-text">
+              <span class="layer-name">APPLICATION LAYER</span>
+              <span class="layer-desc">DNS &bull; HTTP/1.1 &bull; SMTP &bull; HLS</span>
+            </div>
+          </button>
+          <button class="layer-tab" data-layer="transport" id="tab-layer-transport">
+            <span class="layer-icon">⚡</span>
+            <div class="layer-tab-text">
+              <span class="layer-name">TRANSPORT LAYER</span>
+              <span class="layer-desc">TCP Handshake &bull; Seq/Ack &bull; State Machine</span>
+            </div>
+          </button>
+        </nav>
+
+        <!-- Meta bar: Shared status, speed and counter -->
         <div class="protocol-meta-bar">
           <div class="meta-left">
             <span class="activity-type-tag" id="current-activity-tag">No Active Activity</span>
@@ -282,71 +300,385 @@ Student Pair</textarea>
           </div>
         </div>
 
-        <!-- High-level Protocol Flow Stepper (Clickable Nodes) -->
-        <nav class="stepper-nav" id="stepper-nav" aria-label="Protocol steps overview">
-          <div class="stepper-placeholder">Perform an activity on the left to initialize protocol steps</div>
-        </nav>
+        <!-- ======================================================= -->
+        <!-- VIEW 1: APPLICATION LAYER VIEW                          -->
+        <!-- ======================================================= -->
+        <div class="layer-view-container active" id="view-layer-app">
+          <!-- Stepper timeline for Application steps -->
+          <nav class="stepper-nav" id="stepper-nav" aria-label="Application protocol steps overview">
+            <div class="stepper-placeholder">Perform an activity on the left to initialize application steps</div>
+          </nav>
 
-        <!-- Current Step Detail Card -->
-        <div class="step-detail-card" id="step-detail-card">
-
-          <!-- 1. Animated Direction Banner -->
-          <div class="direction-banner" id="direction-banner">
-            <div class="host-node host-client">
-              <span class="node-icon">💻</span>
-              <span class="node-title">CLIENT</span>
-              <span class="node-endpoint" id="client-endpoint">192.168.1.105:54120</span>
+          <div class="step-detail-card" id="step-detail-card">
+            <!-- Cross-layer linkage badge -->
+            <div class="cross-layer-banner" id="app-cross-layer-banner">
+              <span class="cross-layer-label">Transport Binding:</span>
+              <span class="cross-layer-value" id="app-linked-transport-label">Not connected</span>
+              <button type="button" class="btn-cross-switch" id="btn-jump-to-transport">View in Transport Layer &rarr;</button>
             </div>
 
-            <div class="arrow-visualizer" id="arrow-visualizer">
-              <span class="packet-protocol-badge" id="packet-protocol-badge">DNS</span>
-              <div class="arrow-track">
-                <div class="arrow-line"></div>
-                <div class="arrow-head arrow-head-right" id="arrow-head"></div>
+            <!-- Direction Banner -->
+            <div class="direction-banner" id="direction-banner">
+              <div class="host-node host-client">
+                <span class="node-icon">💻</span>
+                <span class="node-title">CLIENT</span>
+                <span class="node-endpoint" id="client-endpoint">192.168.1.105:54120</span>
               </div>
-              <span class="packet-summary-label" id="packet-summary-label">Standard Query: A example.edu</span>
+
+              <div class="arrow-visualizer" id="arrow-visualizer">
+                <span class="packet-protocol-badge" id="packet-protocol-badge">DNS</span>
+                <div class="arrow-track">
+                  <div class="arrow-line"></div>
+                  <div class="arrow-head arrow-head-right" id="arrow-head"></div>
+                </div>
+                <span class="packet-summary-label" id="packet-summary-label">Standard Query: A example.edu</span>
+              </div>
+
+              <div class="host-node host-server">
+                <span class="node-icon">🖥️</span>
+                <span class="node-title" id="server-title">SERVER</span>
+                <span class="node-endpoint" id="server-endpoint">8.8.8.8:53</span>
+              </div>
             </div>
 
-            <div class="host-node host-server">
-              <span class="node-icon">🖥️</span>
-              <span class="node-title" id="server-title">SERVER</span>
-              <span class="node-endpoint" id="server-endpoint">8.8.8.8:53</span>
-            </div>
-          </div>
-
-          <!-- 2. Highlighted Key Protocol Fields -->
-          <div class="highlights-section">
-            <div class="section-title">
-              <span class="title-icon">🏷️</span>
-              <span>Important Protocol Fields</span>
-            </div>
-            <div class="highlights-grid" id="highlights-grid">
-              <div class="empty-highlights">Key extracted fields will appear here.</div>
-            </div>
-          </div>
-
-          <!-- 3. ASCII Wire Payload Inspector -->
-          <div class="wire-section">
-            <div class="wire-header">
+            <!-- Highlighted Fields Grid -->
+            <div class="highlights-section">
               <div class="section-title">
-                <span class="title-icon">📦</span>
-                <span>Wire Message Representation (ASCII / RFC Format)</span>
+                <span class="title-icon">🏷️</span>
+                <span>Important Protocol Fields</span>
               </div>
-              <button type="button" class="btn-copy" id="btn-copy-wire" title="Copy raw message">Copy Message</button>
+              <div class="highlights-grid" id="highlights-grid">
+                <div class="empty-highlights">Key extracted fields will appear here.</div>
+              </div>
             </div>
-            <div class="wire-container">
-              <pre class="wire-code" id="wire-code">No active protocol step loaded. Trigger an activity to inspect packet content.</pre>
+
+            <!-- Wire Message Inspector -->
+            <div class="wire-section">
+              <div class="wire-header">
+                <div class="section-title">
+                  <span class="title-icon">📦</span>
+                  <span>Wire Message Representation (ASCII / RFC Format)</span>
+                </div>
+                <button type="button" class="btn-copy" id="btn-copy-wire" title="Copy raw message">Copy Message</button>
+              </div>
+              <div class="wire-container">
+                <pre class="wire-code" id="wire-code">No active protocol step loaded. Trigger an activity to inspect packet content.</pre>
+              </div>
+            </div>
+
+            <!-- Pedagogical Explanation -->
+            <div class="explanation-box" id="explanation-box">
+              <div class="explanation-header">
+                <span class="bulb-icon">💡</span>
+                <span class="explanation-title">Educational Rationale &amp; Network Mechanics</span>
+              </div>
+              <div class="explanation-text" id="explanation-text">
+                Detailed explanations of why this packet is sent, what flags are used, and how it aligns with Kurose &amp; Ross Layer 7 concepts will appear here as the exchange progresses.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================= -->
+        <!-- VIEW 2: TRANSPORT LAYER VIEW                            -->
+        <!-- ======================================================= -->
+        <div class="layer-view-container" id="view-layer-transport">
+          <!-- TCP State and Flow Status Bar -->
+          <div class="tcp-state-bar">
+            <div class="tcp-state-item">
+              <span class="state-label">Client State:</span>
+              <span class="tcp-state-pill" id="tcp-client-state">CLOSED</span>
+            </div>
+            <div class="tcp-state-arrow">&harr;</div>
+            <div class="tcp-state-item">
+              <span class="state-label">Server State:</span>
+              <span class="tcp-state-pill" id="tcp-server-state">LISTEN</span>
+            </div>
+            <div class="tcp-state-item">
+              <span class="state-label">Advertised Window:</span>
+              <span class="tcp-metric-val" id="tcp-window-metric">64,240 B</span>
+            </div>
+            <div class="tcp-state-item">
+              <span class="state-label">Est. cwnd:</span>
+              <span class="tcp-metric-val" id="tcp-cwnd-metric">1 MSS</span>
             </div>
           </div>
 
-          <!-- 4. Pedagogical Explanation Box -->
-          <div class="explanation-box" id="explanation-box">
-            <div class="explanation-header">
-              <span class="bulb-icon">💡</span>
-              <span class="explanation-title">Educational Rationale &amp; Network Mechanics</span>
+          <!-- Transport Segments Stepper Timeline -->
+          <nav class="stepper-nav transport-stepper-nav" id="transport-stepper-nav" aria-label="Transport segments overview">
+            <div class="stepper-placeholder">Perform an activity to generate TCP/UDP segments</div>
+          </nav>
+
+          <div class="step-detail-card" id="transport-detail-card">
+            <!-- Cross-layer linkage back to App step -->
+            <div class="cross-layer-banner transport-banner">
+              <span class="cross-layer-label">Carries Application Event:</span>
+              <span class="cross-layer-value" id="transport-linked-app-label">None (Transport Control Segment)</span>
+              <button type="button" class="btn-cross-switch" id="btn-jump-to-app">View Application Message &rarr;</button>
             </div>
-            <div class="explanation-text" id="explanation-text">
-              Detailed explanations of why this packet is sent, what flags are used, and how it aligns with Kurose &amp; Ross Layer 7 concepts will appear here as the exchange progresses.
+
+            <!-- Direction Banner for Transport Segment -->
+            <div class="direction-banner" id="transport-direction-banner">
+              <div class="host-node host-client">
+                <span class="node-icon">💻</span>
+                <span class="node-title">CLIENT (HOST)</span>
+                <span class="node-endpoint" id="tcp-src-endpoint">192.168.1.105:52410</span>
+              </div>
+
+              <div class="arrow-visualizer" id="transport-arrow-visualizer">
+                <div class="flags-badge-container" id="tcp-flags-badges">
+                  <span class="tcp-flag-badge badge-syn">SYN</span>
+                </div>
+                <div class="arrow-track">
+                  <div class="arrow-line arrow-line-transport"></div>
+                  <div class="arrow-head arrow-head-right" id="transport-arrow-head"></div>
+                </div>
+                <span class="packet-summary-label" id="transport-summary-label">TCP [SYN] Seq=1000 Win=64240</span>
+              </div>
+
+              <div class="host-node host-server">
+                <span class="node-icon">🖥️</span>
+                <span class="node-title" id="tcp-server-title">DESTINATION</span>
+                <span class="node-endpoint" id="tcp-dst-endpoint">93.184.216.34:80</span>
+              </div>
+            </div>
+
+            <!-- TCP Key Fields Grid: Seq, Ack, Window, Flags, Payload -->
+            <div class="highlights-section">
+              <div class="section-title">
+                <span class="title-icon">🏷️</span>
+                <span>TCP Segment Fields &amp; Header Breakdown</span>
+              </div>
+              <div class="highlights-grid" id="tcp-fields-grid">
+                <div class="highlight-card">
+                  <span class="highlight-name">Sequence Number (SEQ)</span>
+                  <span class="highlight-value" id="tcp-field-seq">1000</span>
+                  <span class="highlight-desc">Byte offset of first data byte in byte stream</span>
+                </div>
+                <div class="highlight-card">
+                  <span class="highlight-name">Acknowledgement (ACK)</span>
+                  <span class="highlight-value" id="tcp-field-ack">0</span>
+                  <span class="highlight-desc">Next expected byte from remote peer</span>
+                </div>
+                <div class="highlight-card">
+                  <span class="highlight-name">Receive Window (WIN)</span>
+                  <span class="highlight-value" id="tcp-field-win">64,240</span>
+                  <span class="highlight-desc">Flow control buffer available for incoming bytes</span>
+                </div>
+                <div class="highlight-card">
+                  <span class="highlight-name">Payload Length (LEN)</span>
+                  <span class="highlight-value" id="tcp-field-len">0 bytes</span>
+                  <span class="highlight-desc">Volume of Layer 7 payload in this segment</span>
+                </div>
+                <div class="highlight-card">
+                  <span class="highlight-name">Control Flags</span>
+                  <span class="highlight-value" id="tcp-field-flags">SYN</span>
+                  <span class="highlight-desc">Active TCP connection control bits</span>
+                </div>
+                <div class="highlight-card">
+                  <span class="highlight-name">State Transitions</span>
+                  <span class="highlight-value" id="tcp-field-states">CLOSED &rarr; SYN-SENT</span>
+                  <span class="highlight-desc">RFC 793 / 9293 connection state transition</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Wire Header Dissection -->
+            <div class="wire-section">
+              <div class="wire-header">
+                <div class="section-title">
+                  <span class="title-icon">📦</span>
+                  <span>Transport Header Dissection (RFC 793 / 9293 Format)</span>
+                </div>
+                <button type="button" class="btn-copy" id="btn-copy-transport-wire" title="Copy segment dissection">Copy Dissection</button>
+              </div>
+              <div class="wire-container">
+                <pre class="wire-code" id="transport-wire-code">No transport segment selected. Trigger an activity to inspect TCP/UDP packets.</pre>
+              </div>
+            </div>
+
+            <!-- Transport Explanation -->
+            <div class="explanation-box" id="transport-explanation-box">
+              <div class="explanation-header">
+                <span class="bulb-icon">💡</span>
+                <span class="explanation-title">Transport Layer Mechanics &amp; State Explanation</span>
+              </div>
+              <div class="explanation-text" id="transport-explanation-text">
+                Detailed educational explanations regarding sequence numbers, acknowledgements, sliding windows, and 3-way handshakes will appear here as segments advance.
+              </div>
+            </div>
+
+            <!-- Transport Live Statistics Bar -->
+            <div class="stats-dashboard">
+              <div class="section-title">
+                <span class="title-icon">📊</span>
+                <span>Transport Session Telemetry &amp; Statistics</span>
+              </div>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <span class="stat-num" id="stat-total-packets">0</span>
+                  <span class="stat-label">Total Packets</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="stat-tcp-segments">0</span>
+                  <span class="stat-label">TCP Segments</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="stat-app-messages">0</span>
+                  <span class="stat-label">App Messages</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="stat-bytes-transferred">0 B</span>
+                  <span class="stat-label">Bytes Transferred</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="stat-retransmissions">0</span>
+                  <span class="stat-label">Retransmissions</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-num" id="stat-connection-state">CLOSED</span>
+                  <span class="stat-label">Connection State</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Educational Tools Accordion / Cards -->
+            <div class="educational-tools-wrap">
+              <!-- Tool 1: Congestion Window (cwnd) Graph -->
+              <details class="tool-accordion" open>
+                <summary class="tool-summary">
+                  <span>📈 Congestion Window (cwnd) Progression</span>
+                  <span class="tool-tag">Simplified Educational Model</span>
+                </summary>
+                <div class="tool-body">
+                  <p class="tool-desc">
+                    Illustrates how TCP probes available network capacity. In <strong>Slow Start</strong>, cwnd doubles every RTT (exponential growth: 1 &rarr; 2 &rarr; 4 &rarr; 8 MSS).
+                    Upon reaching <em>ssthresh</em>, TCP enters <strong>Congestion Avoidance</strong> (additive increase: +1 MSS per RTT).
+                  </p>
+                  <div class="cwnd-chart-container">
+                    <div class="cwnd-bar-group">
+                      <div class="cwnd-bar" style="height: 15%;"><span class="cwnd-val">1</span></div>
+                      <span class="cwnd-label">RTT 1</span>
+                    </div>
+                    <div class="cwnd-bar-group">
+                      <div class="cwnd-bar" style="height: 25%;"><span class="cwnd-val">2</span></div>
+                      <span class="cwnd-label">RTT 2</span>
+                    </div>
+                    <div class="cwnd-bar-group">
+                      <div class="cwnd-bar" style="height: 45%;"><span class="cwnd-val">4</span></div>
+                      <span class="cwnd-label">RTT 3</span>
+                    </div>
+                    <div class="cwnd-bar-group">
+                      <div class="cwnd-bar" style="height: 75%;"><span class="cwnd-val">8</span></div>
+                      <span class="cwnd-label">RTT 4 (ssthresh)</span>
+                    </div>
+                    <div class="cwnd-bar-group">
+                      <div class="cwnd-bar cwnd-ca" style="height: 85%;"><span class="cwnd-val">9</span></div>
+                      <span class="cwnd-label">RTT 5 (CA)</span>
+                    </div>
+                    <div class="cwnd-bar-group">
+                      <div class="cwnd-bar cwnd-ca" style="height: 95%;"><span class="cwnd-val">10</span></div>
+                      <span class="cwnd-label">RTT 6 (CA)</span>
+                    </div>
+                  </div>
+                  <div class="cwnd-legend">
+                    <span class="legend-item"><span class="legend-color legend-ss"></span> Slow Start (Exponential)</span>
+                    <span class="legend-item"><span class="legend-color legend-ca"></span> Congestion Avoidance (+1 MSS / RTT)</span>
+                  </div>
+                </div>
+              </details>
+
+              <!-- Tool 2: TCP vs UDP Architectural Comparison -->
+              <details class="tool-accordion">
+                <summary class="tool-summary">
+                  <span>⚖️ TCP vs. UDP Architectural Comparison</span>
+                  <span class="tool-tag">Reference Table</span>
+                </summary>
+                <div class="tool-body">
+                  <table class="comparison-table">
+                    <thead>
+                      <tr>
+                        <th>Property</th>
+                        <th>TCP (Transmission Control Protocol)</th>
+                        <th>UDP (User Datagram Protocol)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Connection</strong></td>
+                        <td>Connection-oriented (3-way handshake required)</td>
+                        <td>Connectionless (fire-and-forget datagrams)</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Reliability</strong></td>
+                        <td>Guaranteed in-order delivery via ACKs &amp; retransmissions</td>
+                        <td>Unreliable (packets can drop, duplicate, or reorder)</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Ordering</strong></td>
+                        <td>Strict byte-stream sequencing via 32-bit SEQ numbers</td>
+                        <td>No sequence tracking; datagram boundaries preserved</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Flow &amp; Congestion</strong></td>
+                        <td>Advertised Window (flow) + cwnd (congestion control)</td>
+                        <td>None (application must throttle itself)</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Header Overhead</strong></td>
+                        <td>20 to 60 bytes</td>
+                        <td>Minimal 8 bytes</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Use Cases</strong></td>
+                        <td>HTTP/1.1, HTTP/2, SMTP, SSH, File Transfers</td>
+                        <td>DNS queries, VoIP, live multiplayer gaming, DHCP</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+
+              <!-- Tool 3: Educational QUIC / HTTP/3 Overview -->
+              <details class="tool-accordion">
+                <summary class="tool-summary">
+                  <span>🚀 QUIC &amp; HTTP/3 Overview</span>
+                  <span class="tool-tag">Modern Evolution</span>
+                </summary>
+                <div class="tool-body">
+                  <p class="tool-desc">
+                    <strong>QUIC (RFC 9000)</strong> operates on top of <strong>UDP</strong> to overcome TCP limitations:
+                  </p>
+                  <ul class="quic-features-list">
+                    <li><strong>0-RTT Connection Establishment</strong>: Merges transport and TLS 1.3 cryptographic handshakes into a single round-trip.</li>
+                    <li><strong>No Head-of-Line (HoL) Blocking</strong>: Multiple HTTP streams are independently multiplexed. Dropping a packet in Stream 1 does NOT stall Stream 2!</li>
+                    <li><strong>Connection Migration</strong>: Connections are identified by a 64-bit Connection ID rather than the 4-tuple (IP:Port), allowing seamless switching between Wi-Fi and 5G cellular.</li>
+                  </ul>
+                </div>
+              </details>
+
+              <!-- Tool 4: Network Conditions Simulation (Fault Injection) -->
+              <details class="tool-accordion">
+                <summary class="tool-summary">
+                  <span>🧪 Network Fault Simulation (Loss &amp; Retransmission)</span>
+                  <span class="tool-tag">Interactive Simulation</span>
+                </summary>
+                <div class="tool-body">
+                  <p class="tool-desc">
+                    Toggle simulated packet loss to observe how TCP detects unacknowledged data via timer expiry (Retransmission Timeout - RTO) and initiates recovery.
+                  </p>
+                  <div class="fault-controls">
+                    <label class="toggle-switch">
+                      <input type="checkbox" id="checkbox-simulate-loss">
+                      <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label" id="loss-toggle-label">Simulate Packet Drop &amp; Retransmission: <strong>Disabled</strong></span>
+                  </div>
+                  <p class="simulation-disclaimer">
+                    <em>Notice: Deterministic Educational Simulation. Does not capture or inject physical network packets.</em>
+                  </p>
+                </div>
+              </details>
             </div>
           </div>
         </div>
@@ -357,8 +689,8 @@ Student Pair</textarea>
 
   <footer class="app-footer">
     <div class="footer-content">
-      <span>Computer Networks Course &bull; Layer 7 Protocol Simulator</span>
-      <span>RFC 1035 (DNS) &bull; RFC 9112 (HTTP/1.1) &bull; RFC 5321 (SMTP) &bull; RFC 8216 (HLS)</span>
+      <span>Computer Networks Course &bull; Layer 4 &amp; Layer 7 Protocol Simulator</span>
+      <span>RFC 793 (TCP) &bull; RFC 768 (UDP) &bull; RFC 9293 (TCP Modern) &bull; RFC 1035 (DNS) &bull; RFC 9112 (HTTP) &bull; RFC 5321 (SMTP)</span>
     </div>
   </footer>
 

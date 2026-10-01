@@ -1,7 +1,7 @@
 /**
- * Application Layer Activity & Protocol Visualizer - Frontend Engine
- * Manages WebSocket synchronization, dual-panel state, interactive playback,
- * and dynamic packet inspection animations.
+ * Application & Transport Layer Activity & Protocol Visualizer - Frontend Engine
+ * Manages WebSocket synchronization, dual-panel layout, layer switching (L4/L7),
+ * interactive playback, cross-layer bidirectional linking, and dynamic packet animations.
  */
 
 (function () {
@@ -12,12 +12,18 @@
     ws: null,
     isConnected: false,
     activeMode: "browsing", // "browsing" | "mail" | "streaming"
+    activeLayer: "application", // "application" | "transport"
     currentActivity: null,
     currentStepIndex: 0,
     totalSteps: 0,
     isPlaying: false,
     currentStepData: null,
     allStepsSummary: [],
+    transportSegments: [],
+    currentTransportSegment: null,
+    currentTransportIndex: 0,
+    transportStats: null,
+    simulateLoss: false,
     reconnectInterval: 2000,
     mockBufferPercent: 0,
     mockChunksLoaded: 0,
@@ -29,7 +35,7 @@
     wsBadge: document.getElementById("ws-badge"),
     wsStatusText: document.getElementById("ws-status-text"),
 
-    // Mode Tabs & Views
+    // Left Panel: Mode Tabs & Views
     tabBrowsing: document.getElementById("tab-browsing"),
     tabMail: document.getElementById("tab-mail"),
     tabStreaming: document.getElementById("tab-streaming"),
@@ -63,34 +69,72 @@
     bufferFill: document.getElementById("buffer-fill"),
     playerChunkLabel: document.getElementById("player-chunk-label"),
 
-    // Playback Controls
+    // Layer Switcher Tabs
+    tabLayerApp: document.getElementById("tab-layer-app"),
+    tabLayerTransport: document.getElementById("tab-layer-transport"),
+    viewLayerApp: document.getElementById("view-layer-app"),
+    viewLayerTransport: document.getElementById("view-layer-transport"),
+
+    // Shared Meta & Controls
     btnReplay: document.getElementById("btn-replay"),
     btnPrevStep: document.getElementById("btn-prev-step"),
     btnPauseResume: document.getElementById("btn-pause-resume"),
     labelPauseResume: document.getElementById("label-pause-resume"),
     btnNextStep: document.getElementById("btn-next-step"),
-
-    // Meta bar
     currentActivityTag: document.getElementById("current-activity-tag"),
     stepCounter: document.getElementById("step-counter"),
     relativeTimeTag: document.getElementById("relative-time-tag"),
 
-    // Stepper Nav
+    // Application Layer View Elements
     stepperNav: document.getElementById("stepper-nav"),
-
-    // Direction Banner
+    appCrossLayerBanner: document.getElementById("app-cross-layer-banner"),
+    appLinkedTransportLabel: document.getElementById("app-linked-transport-label"),
+    btnJumpToTransport: document.getElementById("btn-jump-to-transport"),
     clientEndpoint: document.getElementById("client-endpoint"),
     serverTitle: document.getElementById("server-title"),
     serverEndpoint: document.getElementById("server-endpoint"),
     arrowHead: document.getElementById("arrow-head"),
     packetProtocolBadge: document.getElementById("packet-protocol-badge"),
     packetSummaryLabel: document.getElementById("packet-summary-label"),
-
-    // Details
     highlightsGrid: document.getElementById("highlights-grid"),
     wireCode: document.getElementById("wire-code"),
     btnCopyWire: document.getElementById("btn-copy-wire"),
     explanationText: document.getElementById("explanation-text"),
+
+    // Transport Layer View Elements
+    tcpClientState: document.getElementById("tcp-client-state"),
+    tcpServerState: document.getElementById("tcp-server-state"),
+    tcpWindowMetric: document.getElementById("tcp-window-metric"),
+    tcpCwndMetric: document.getElementById("tcp-cwnd-metric"),
+    transportStepperNav: document.getElementById("transport-stepper-nav"),
+    transportLinkedAppLabel: document.getElementById("transport-linked-app-label"),
+    btnJumpToApp: document.getElementById("btn-jump-to-app"),
+    tcpSrcEndpoint: document.getElementById("tcp-src-endpoint"),
+    tcpDstEndpoint: document.getElementById("tcp-dst-endpoint"),
+    tcpFlagsBadges: document.getElementById("tcp-flags-badges"),
+    transportArrowHead: document.getElementById("transport-arrow-head"),
+    transportSummaryLabel: document.getElementById("transport-summary-label"),
+    tcpFieldSeq: document.getElementById("tcp-field-seq"),
+    tcpFieldAck: document.getElementById("tcp-field-ack"),
+    tcpFieldWin: document.getElementById("tcp-field-win"),
+    tcpFieldLen: document.getElementById("tcp-field-len"),
+    tcpFieldFlags: document.getElementById("tcp-field-flags"),
+    tcpFieldStates: document.getElementById("tcp-field-states"),
+    transportWireCode: document.getElementById("transport-wire-code"),
+    btnCopyTransportWire: document.getElementById("btn-copy-transport-wire"),
+    transportExplanationText: document.getElementById("transport-explanation-text"),
+
+    // Statistics
+    statTotalPackets: document.getElementById("stat-total-packets"),
+    statTcpSegments: document.getElementById("stat-tcp-segments"),
+    statAppMessages: document.getElementById("stat-app-messages"),
+    statBytesTransferred: document.getElementById("stat-bytes-transferred"),
+    statRetransmissions: document.getElementById("stat-retransmissions"),
+    statConnectionState: document.getElementById("stat-connection-state"),
+
+    // Network Fault Control
+    checkboxSimulateLoss: document.getElementById("checkbox-simulate-loss"),
+    lossToggleLabel: document.getElementById("loss-toggle-label"),
   };
 
   // --- WebSocket Connection Management ---
@@ -164,8 +208,9 @@
     state.totalSteps = msg.total_steps;
     state.isPlaying = msg.is_playing;
     state.allStepsSummary = msg.all_steps_summary || [];
+    state.transportSegments = msg.transport_segments || [];
+    state.transportStats = msg.transport_stats || null;
 
-    // Reset mock streaming buffer when new session starts
     if (msg.activity_type === "streaming") {
       state.mockBufferPercent = 0;
       state.mockChunksLoaded = 0;
@@ -173,7 +218,8 @@
     }
 
     updateControlsUI();
-    renderStepperNav();
+    renderAppStepperNav();
+    renderTransportStepperNav();
     updateActivityStatus(msg.activity_type, msg.status_text, "active");
 
     if (msg.log_message) {
@@ -181,7 +227,22 @@
     }
 
     if (msg.step) {
-      renderStepDetail(msg.step);
+      state.currentStepData = msg.step;
+      renderAppStepDetail(msg.step);
+    }
+
+    if (msg.current_transport_segment) {
+      state.currentTransportSegment = msg.current_transport_segment;
+      state.currentTransportIndex = msg.current_transport_segment.id;
+      renderTransportDetail(msg.current_transport_segment);
+    } else if (state.transportSegments.length > 0) {
+      state.currentTransportSegment = state.transportSegments[0];
+      state.currentTransportIndex = 1;
+      renderTransportDetail(state.transportSegments[0]);
+    }
+
+    if (state.transportStats) {
+      renderTransportStats(state.transportStats);
     }
   }
 
@@ -190,14 +251,18 @@
     state.totalSteps = msg.total_steps;
     state.isPlaying = msg.is_playing;
 
+    if (msg.transport_segments) {
+      state.transportSegments = msg.transport_segments;
+      renderTransportStepperNav();
+    }
+
     updateControlsUI();
-    updateStepperHighlight();
+    updateAppStepperHighlight();
 
     if (msg.step) {
       state.currentStepData = msg.step;
-      renderStepDetail(msg.step);
+      renderAppStepDetail(msg.step);
 
-      // Log in appropriate panel
       const dirClass = msg.step.direction === "client_to_server" ? "client" : "server";
       logActivity(
         msg.activity_type || state.activeMode,
@@ -206,11 +271,22 @@
       );
     }
 
+    if (msg.current_transport_segment) {
+      state.currentTransportSegment = msg.current_transport_segment;
+      state.currentTransportIndex = msg.current_transport_segment.id;
+      renderTransportDetail(msg.current_transport_segment);
+      updateTransportStepperHighlight();
+    }
+
+    if (msg.transport_stats) {
+      state.transportStats = msg.transport_stats;
+      renderTransportStats(msg.transport_stats);
+    }
+
     const isFinal = state.currentStepIndex === state.totalSteps;
     const badgeType = isFinal ? "success" : "active";
     updateActivityStatus(msg.activity_type, msg.status_text, badgeType);
 
-    // Streaming player visual feedback
     if (msg.activity_type === "streaming" && msg.step) {
       handleStreamingStepSideEffects(msg.step);
     }
@@ -260,19 +336,28 @@
     }
   }
 
-  // --- Rendering Protocol Step Details ---
-  function renderStepDetail(step) {
+  // --- Rendering Application Layer Step Details ---
+  function renderAppStepDetail(step) {
     // 1. Meta Bar
     elements.currentActivityTag.textContent = (state.currentActivity || "Activity").toUpperCase();
     elements.stepCounter.textContent = `Step ${step.step_id} / ${step.total_steps}`;
     elements.relativeTimeTag.textContent = `+${step.relative_time_ms} ms`;
 
-    // 2. Direction Banner & Endpoints
+    // 2. Cross-layer Linkage
+    if (step.transport_segment_ids && step.transport_segment_ids.length > 0) {
+      const segIdStr = step.transport_segment_ids.map((id) => `#${id}`).join(", ");
+      elements.appLinkedTransportLabel.textContent = `Carried via TCP Segments: ${segIdStr}`;
+      elements.btnJumpToTransport.style.display = "inline-block";
+    } else {
+      elements.appLinkedTransportLabel.textContent = "No specific TCP segments linked";
+      elements.btnJumpToTransport.style.display = "none";
+    }
+
+    // 3. Direction Banner & Endpoints
     const isClientToServer = step.direction === "client_to_server";
     elements.clientEndpoint.textContent = isClientToServer ? step.sender : step.receiver;
     elements.serverEndpoint.textContent = isClientToServer ? step.receiver : step.sender;
 
-    // Server title specialization
     if (step.protocol === "DNS") {
       elements.serverTitle.textContent = "DNS RESOLVER";
     } else if (step.protocol === "SMTP") {
@@ -281,25 +366,19 @@
       elements.serverTitle.textContent = "WEB/CDN SERVER";
     }
 
-    // Direction arrow head
-    if (isClientToServer) {
-      elements.arrowHead.className = "arrow-head arrow-head-right";
-    } else {
-      elements.arrowHead.className = "arrow-head arrow-head-left";
-    }
+    elements.arrowHead.className = isClientToServer
+      ? "arrow-head arrow-head-right"
+      : "arrow-head arrow-head-left";
 
-    // Protocol badge style
     elements.packetProtocolBadge.textContent = step.protocol;
     elements.packetProtocolBadge.className = `packet-protocol-badge proto-${step.protocol.toLowerCase()}`;
     elements.packetSummaryLabel.textContent = step.summary;
 
-    // 3. Highlighted Fields Grid
+    // 4. Highlighted Fields Grid
     renderHighlights(step.highlighted_fields);
 
-    // 4. Wire Message
+    // 5. Wire Message & Explanation
     elements.wireCode.textContent = step.raw_message;
-
-    // 5. Educational Explanation
     elements.explanationText.textContent = step.explanation;
   }
 
@@ -322,11 +401,85 @@
     });
   }
 
+  // --- Rendering Transport Layer Segment Details ---
+  function renderTransportDetail(segment) {
+    if (!segment) return;
+
+    // 1. TCP State Pill in state bar
+    elements.tcpClientState.textContent = segment.client_state;
+    elements.tcpServerState.textContent = segment.server_state;
+    elements.tcpWindowMetric.textContent = `${segment.window.toLocaleString()} B`;
+
+    // 2. Cross-layer Linkage back to Application Step
+    if (segment.application_event_id) {
+      elements.transportLinkedAppLabel.textContent = `Step #${segment.application_event_id} (Click to inspect application message)`;
+      elements.btnJumpToApp.style.display = "inline-block";
+    } else {
+      elements.transportLinkedAppLabel.textContent = "None (TCP Transport Handshake / Control Segment)";
+      elements.btnJumpToApp.style.display = "none";
+    }
+
+    // 3. Direction Banner
+    const isClientToServer = segment.direction === "client_to_server";
+    elements.tcpSrcEndpoint.textContent = `${segment.source_ip}:${segment.source_port}`;
+    elements.tcpDstEndpoint.textContent = `${segment.destination_ip}:${segment.destination_port}`;
+
+    elements.transportArrowHead.className = isClientToServer
+      ? "arrow-head arrow-head-right"
+      : "arrow-head arrow-head-left";
+
+    // Flags Badges
+    elements.tcpFlagsBadges.innerHTML = "";
+    if (segment.protocol === "UDP") {
+      const b = document.createElement("span");
+      b.className = "tcp-flag-badge badge-syn";
+      b.textContent = "UDP";
+      elements.tcpFlagsBadges.appendChild(b);
+    } else if (segment.flags && segment.flags.length > 0) {
+      segment.flags.forEach((f) => {
+        const b = document.createElement("span");
+        b.className = `tcp-flag-badge badge-${f.toLowerCase()}`;
+        b.textContent = f;
+        elements.tcpFlagsBadges.appendChild(b);
+      });
+    } else {
+      const b = document.createElement("span");
+      b.className = "tcp-flag-badge badge-ack";
+      b.textContent = "DATA";
+      elements.tcpFlagsBadges.appendChild(b);
+    }
+
+    elements.transportSummaryLabel.textContent = segment.summary;
+
+    // 4. TCP Key Fields Breakdown
+    elements.tcpFieldSeq.textContent = segment.protocol === "UDP" ? "N/A (UDP)" : segment.seq.toLocaleString();
+    elements.tcpFieldAck.textContent = segment.protocol === "UDP" ? "N/A (UDP)" : segment.ack.toLocaleString();
+    elements.tcpFieldWin.textContent = segment.protocol === "UDP" ? "N/A" : `${segment.window.toLocaleString()} B`;
+    elements.tcpFieldLen.textContent = `${segment.payload_length.toLocaleString()} bytes`;
+    elements.tcpFieldFlags.textContent = segment.flags.length > 0 ? segment.flags.join(", ") : (segment.protocol === "UDP" ? "UDP" : "None");
+    elements.tcpFieldStates.textContent = `Client: ${segment.client_state} | Server: ${segment.server_state}`;
+
+    // 5. Wire Header Dissection & Explanation
+    elements.transportWireCode.textContent = segment.raw_segment;
+    elements.transportExplanationText.textContent = segment.explanation;
+  }
+
+  function renderTransportStats(stats) {
+    if (!stats) return;
+    elements.statTotalPackets.textContent = stats.total_packets;
+    elements.statTcpSegments.textContent = stats.tcp_segments;
+    elements.statAppMessages.textContent = stats.application_messages;
+    elements.statBytesTransferred.textContent = `${stats.total_bytes.toLocaleString()} B`;
+    elements.statRetransmissions.textContent = stats.retransmissions;
+    elements.statConnectionState.textContent = stats.client_state;
+    elements.tcpCwndMetric.textContent = `${stats.cwnd} MSS`;
+  }
+
   // --- Stepper Navigation ---
-  function renderStepperNav() {
+  function renderAppStepperNav() {
     elements.stepperNav.innerHTML = "";
     if (!state.allStepsSummary || state.allStepsSummary.length === 0) {
-      elements.stepperNav.innerHTML = `<div class="stepper-placeholder">Perform an activity on the left to initialize protocol steps</div>`;
+      elements.stepperNav.innerHTML = `<div class="stepper-placeholder">Perform an activity on the left to initialize application steps</div>`;
       return;
     }
 
@@ -347,10 +500,10 @@
       elements.stepperNav.appendChild(pill);
     });
 
-    updateStepperHighlight();
+    updateAppStepperHighlight();
   }
 
-  function updateStepperHighlight() {
+  function updateAppStepperHighlight() {
     const pills = elements.stepperNav.querySelectorAll(".step-pill");
     pills.forEach((pill) => {
       const stepNum = parseInt(pill.dataset.stepId, 10);
@@ -359,6 +512,56 @@
         pill.classList.add("active");
         pill.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
       } else if (stepNum < state.currentStepIndex) {
+        pill.classList.add("completed");
+      }
+    });
+  }
+
+  function renderTransportStepperNav() {
+    elements.transportStepperNav.innerHTML = "";
+    if (!state.transportSegments || state.transportSegments.length === 0) {
+      elements.transportStepperNav.innerHTML = `<div class="stepper-placeholder">Perform an activity to generate TCP/UDP segments</div>`;
+      return;
+    }
+
+    state.transportSegments.forEach((seg) => {
+      const pill = document.createElement("button");
+      pill.type = "button";
+      pill.className = "step-pill";
+      pill.dataset.segId = seg.id;
+      pill.title = seg.summary;
+
+      const flagText = seg.flags.length > 0 ? seg.flags.join("+") : seg.protocol;
+      const icon = seg.direction === "client_to_server" ? "→" : "←";
+      pill.textContent = `#${seg.id} [${flagText}] ${icon}`;
+
+      pill.addEventListener("click", () => {
+        state.currentTransportSegment = seg;
+        state.currentTransportIndex = seg.id;
+        renderTransportDetail(seg);
+        updateTransportStepperHighlight();
+
+        // If this segment has a linked application event, highlight it in the background
+        if (seg.application_event_id && seg.application_event_id !== state.currentStepIndex) {
+          sendWS("seek", { target_step: seg.application_event_id });
+        }
+      });
+
+      elements.transportStepperNav.appendChild(pill);
+    });
+
+    updateTransportStepperHighlight();
+  }
+
+  function updateTransportStepperHighlight() {
+    const pills = elements.transportStepperNav.querySelectorAll(".step-pill");
+    pills.forEach((pill) => {
+      const segId = parseInt(pill.dataset.segId, 10);
+      pill.classList.remove("active", "completed");
+      if (segId === state.currentTransportIndex) {
+        pill.classList.add("active");
+        pill.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
+      } else if (segId < state.currentTransportIndex) {
         pill.classList.add("completed");
       }
     });
@@ -408,6 +611,22 @@
     logContainer.scrollTop = logContainer.scrollHeight;
   }
 
+  // --- Layer Tab Switching (L4 vs L7) ---
+  function switchLayer(layer) {
+    state.activeLayer = layer;
+    if (layer === "application") {
+      elements.tabLayerApp.classList.add("active");
+      elements.tabLayerTransport.classList.remove("active");
+      elements.viewLayerApp.classList.add("active");
+      elements.viewLayerTransport.classList.remove("active");
+    } else {
+      elements.tabLayerTransport.classList.add("active");
+      elements.tabLayerApp.classList.remove("active");
+      elements.viewLayerTransport.classList.add("active");
+      elements.viewLayerApp.classList.remove("active");
+    }
+  }
+
   // --- Mode Tab Switching ---
   function switchMode(newMode) {
     state.activeMode = newMode;
@@ -433,6 +652,32 @@
 
   // --- Event Listeners Setup ---
   function setupEventListeners() {
+    // Layer Switcher Tabs
+    elements.tabLayerApp.addEventListener("click", () => switchLayer("application"));
+    elements.tabLayerTransport.addEventListener("click", () => switchLayer("transport"));
+
+    // Cross-layer Jump Buttons
+    elements.btnJumpToTransport.addEventListener("click", () => {
+      switchLayer("transport");
+      if (state.currentStepData && state.currentStepData.transport_segment_ids.length > 0) {
+        const targetId = state.currentStepData.transport_segment_ids[0];
+        const seg = state.transportSegments.find((s) => s.id === targetId);
+        if (seg) {
+          state.currentTransportSegment = seg;
+          state.currentTransportIndex = seg.id;
+          renderTransportDetail(seg);
+          updateTransportStepperHighlight();
+        }
+      }
+    });
+
+    elements.btnJumpToApp.addEventListener("click", () => {
+      switchLayer("application");
+      if (state.currentTransportSegment && state.currentTransportSegment.application_event_id) {
+        sendWS("seek", { target_step: state.currentTransportSegment.application_event_id });
+      }
+    });
+
     // Mode Switchers
     elements.tabBrowsing.addEventListener("click", () => switchMode("browsing"));
     elements.tabMail.addEventListener("click", () => switchMode("mail"));
@@ -463,7 +708,7 @@
       }
       switchMode("browsing");
       logActivity("browsing", "client", `User clicked Visit: ${url}`);
-      updateActivityStatus("browsing", "Connecting to DNS & Server...", "active");
+      updateActivityStatus("browsing", "Connecting to DNS, TCP & HTTP...", "active");
 
       sendWS("start_activity", {
         activity_type: "browsing",
@@ -490,7 +735,7 @@
 
       switchMode("mail");
       logActivity("mail", "client", `User clicked Send Mail to: ${to}`);
-      updateActivityStatus("mail", "Initializing SMTP dialogue...", "active");
+      updateActivityStatus("mail", "Initializing TCP Handshake (Port 25) & SMTP...", "active");
 
       sendWS("start_activity", {
         activity_type: "mail",
@@ -508,7 +753,7 @@
       const quality = elements.streamQuality.value;
       switchMode("streaming");
       logActivity("streaming", "client", `Play stream requested at ${quality}`);
-      updateActivityStatus("streaming", "Fetching master playlist...", "active");
+      updateActivityStatus("streaming", "Connecting to CDN over TCP...", "active");
       elements.playerQualityBadge.textContent = quality.toUpperCase();
 
       sendWS("start_activity", {
@@ -544,15 +789,30 @@
       sendWS("replay");
     });
 
-    // Copy Wire Payload
+    // Network Conditions: Simulate Loss Toggle
+    elements.checkboxSimulateLoss.addEventListener("change", (e) => {
+      const isChecked = e.target.checked;
+      state.simulateLoss = isChecked;
+      elements.lossToggleLabel.innerHTML = `Simulate Packet Drop &amp; Retransmission: <strong>${isChecked ? "Enabled" : "Disabled"}</strong>`;
+      sendWS("toggle_loss", { simulate_loss: isChecked });
+    });
+
+    // Copy Payloads
     elements.btnCopyWire.addEventListener("click", () => {
       const text = elements.wireCode.textContent;
       navigator.clipboard.writeText(text).then(() => {
         const original = elements.btnCopyWire.textContent;
         elements.btnCopyWire.textContent = "Copied!";
-        setTimeout(() => {
-          elements.btnCopyWire.textContent = original;
-        }, 1500);
+        setTimeout(() => { elements.btnCopyWire.textContent = original; }, 1500);
+      });
+    });
+
+    elements.btnCopyTransportWire.addEventListener("click", () => {
+      const text = elements.transportWireCode.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const original = elements.btnCopyTransportWire.textContent;
+        elements.btnCopyTransportWire.textContent = "Copied!";
+        setTimeout(() => { elements.btnCopyTransportWire.textContent = original; }, 1500);
       });
     });
   }
